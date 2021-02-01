@@ -508,8 +508,6 @@ public class AmqpSendHandlerTest
         new Expectations()
         {
             {
-                mockedEvent.getType();
-                result = Event.Type.DELIVERY;
                 mockedEvent.getDelivery();
                 result = mockedDelivery;
                 mockedDelivery.getRemoteState();
