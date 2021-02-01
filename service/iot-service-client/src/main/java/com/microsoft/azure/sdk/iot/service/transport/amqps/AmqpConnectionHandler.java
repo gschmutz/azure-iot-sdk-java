@@ -32,15 +32,15 @@ import java.io.IOException;
 @Slf4j
 public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithCleanup implements CbsSessionStateCallback
 {
-    public static final String WEBSOCKET_PATH = "/$iothub/websocket";
-    public static final String WEBSOCKET_SUB_PROTOCOL = "AMQPWSB10";
-    public static final int AMQPS_PORT = 5671;
-    public static final int AMQPS_WS_PORT = 443;
+    private static final String WEBSOCKET_PATH = "/$iothub/websocket";
+    private static final String WEBSOCKET_SUB_PROTOCOL = "AMQPWSB10";
+    private static final int AMQPS_PORT = 5671;
+    private static final int AMQPS_WS_PORT = 443;
 
-    protected Exception savedException;
-    protected boolean connectionOpenedRemotely;
-    protected boolean sessionOpenedRemotely;
-    protected boolean linkOpenedRemotely;
+    private Exception savedException;
+    private boolean connectionOpenedRemotely;
+    private boolean sessionOpenedRemotely;
+    private boolean linkOpenedRemotely;
 
     protected final String hostName;
     protected String userName;
@@ -182,7 +182,7 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
     {
         Connection conn = event.getConnection();
         conn.setHostname(hostName);
-        log.debug("Opening connection for amqp cloud to device message sender");
+        log.debug("Opening AMQP connection");
         conn.open();
     }
 
