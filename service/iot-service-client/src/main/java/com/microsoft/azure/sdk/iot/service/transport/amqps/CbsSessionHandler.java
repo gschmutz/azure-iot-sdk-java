@@ -7,6 +7,7 @@ import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.transport.amqp.ErrorLoggingBaseHandlerWithCleanup;
+import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.transport.DeliveryState;
@@ -25,6 +26,8 @@ import java.util.UUID;
 @Slf4j
 public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implements AuthenticationMessageCallback, LinkStateCallback
 {
+    // Token's should be proactively renewed at 85% of the lifespan of the previous token
+    private static final double TOKEN_RENEWAL_PERCENT = .85;
     private Session session;
     private CbsSenderLinkHandler cbsSenderLinkHandler;
     private CbsReceiverLinkHandler cbsReceiverLinkHandler;
@@ -101,7 +104,7 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
         }
         else
         {
-            IOException e = new IOException(status + " : " + description);
+            IotHubException e = new IotHubException(status, description);
             log.error("CBS session failed to authenticate", e);
             this.cbsSessionStateCallback.onAuthenticationFailed(e);
             this.session.close(); // should chain to close the connection from logic in ErrorLoggingBaseHandlerWithCleanup
@@ -170,7 +173,7 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
 
         // Cast of double to int here is safe because this value does not need to be precisely 85% of the token renewal time
         // so it is okay to truncate this double to its int value
-        double proactiveTokenRenewalMillis = (millisecondsToTokenExpiry * .85);
+        double proactiveTokenRenewalMillis = (millisecondsToTokenExpiry * TOKEN_RENEWAL_PERCENT);
 
         if (proactiveTokenRenewalMillis >= Integer.MAX_VALUE)
         {

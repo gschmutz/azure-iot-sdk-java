@@ -31,6 +31,13 @@ public class IotHubException extends Exception
         this.errorCode = errorCode;
     }
 
+    public IotHubException(int errorCode, String message)
+    {
+        super(message);
+        this.errorCodeDescription = ErrorCodeDescription.UnclassifiedErrorCode;
+        this.errorCode = errorCode;
+    }
+
     /**
      * <p>Provides the HTTP error code, if applicable.</p>
      *

@@ -106,14 +106,7 @@ public class AmqpFeedbackReceivedHandler extends AmqpConnectionHandler
             SSLContext sslContext)
     {
         super(hostName, userName, sasToken, iotHubServiceClientProtocol, proxyOptions, sslContext);
-
         this.amqpFeedbackReceivedEvent = amqpFeedbackReceivedEvent;
-
-        // Add a child handler that performs some default handshaking
-        // behaviour.
-
-        add(new Handshaker());
-        add(new FlowController());
     }
 
     AmqpFeedbackReceivedHandler(
@@ -126,14 +119,7 @@ public class AmqpFeedbackReceivedHandler extends AmqpConnectionHandler
             SSLContext sslContext)
     {
         super(hostName, authenticationTokenProvider, authorizationType, iotHubServiceClientProtocol, proxyOptions, sslContext);
-
         this.amqpFeedbackReceivedEvent = amqpFeedbackReceivedEvent;
-
-        // Add a child handler that performs some default handshaking
-        // behaviour.
-
-        add(new Handshaker());
-        add(new FlowController());
     }
 
     @Override

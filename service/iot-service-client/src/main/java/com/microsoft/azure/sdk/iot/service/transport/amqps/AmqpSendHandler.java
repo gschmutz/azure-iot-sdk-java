@@ -105,7 +105,6 @@ public class AmqpSendHandler extends AmqpConnectionHandler
             SSLContext sslContext)
     {
         super(hostName, userName, sasToken, iotHubServiceClientProtocol, proxyOptions, sslContext);
-        add(new Handshaker());
     }
 
     AmqpSendHandler(
@@ -117,7 +116,6 @@ public class AmqpSendHandler extends AmqpConnectionHandler
             SSLContext sslContext)
     {
         super(hostName, tokenProvider, authorizationType, iotHubServiceClientProtocol, proxyOptions, sslContext);
-        add(new Handshaker());
     }
 
     /**

@@ -22,8 +22,6 @@ import org.apache.qpid.proton.engine.EndpointState;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Session;
-import org.apache.qpid.proton.reactor.FlowController;
-import org.apache.qpid.proton.reactor.Handshaker;
 
 import javax.net.ssl.SSLContext;
 import java.util.HashMap;
@@ -66,14 +64,7 @@ public class AmqpFileUploadNotificationReceivedHandler extends AmqpConnectionHan
             SSLContext sslContext)
     {
         super(hostName, userName, sasToken, iotHubServiceClientProtocol, proxyOptions, sslContext);
-
         this.amqpFeedbackReceivedEvent = amqpFeedbackReceivedEvent;
-
-        // Add a child handler that performs some default handshaking
-        // behaviour.
-
-        add(new Handshaker());
-        add(new FlowController());
     }
 
     AmqpFileUploadNotificationReceivedHandler(
@@ -86,14 +77,7 @@ public class AmqpFileUploadNotificationReceivedHandler extends AmqpConnectionHan
             SSLContext sslContext)
     {
         super(hostName, authenticationTokenProvider, authorizationType, iotHubServiceClientProtocol, proxyOptions, sslContext);
-
         this.amqpFeedbackReceivedEvent = amqpFeedbackReceivedEvent;
-
-        // Add a child handler that performs some default handshaking
-        // behaviour.
-
-        add(new Handshaker());
-        add(new FlowController());
     }
 
     @Override

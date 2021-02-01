@@ -16,14 +16,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Every SAS token based authentication over AMQP requires a CBS session with a sender and receiver link. This
+ * Every token based authentication over AMQP requires a CBS session with a sender and receiver link. This
  * class defines the receiver link which receives authentication status codes corresponding to each authentication attempt.
  */
 @Slf4j
 public final class CbsReceiverLinkHandler extends ReceiverLinkHandler
 {
-    private final static String APPLICATION_PROPERTY_STATUS_CODE = "status-code";
-    private final static String APPLICATION_PROPERTY_STATUS_DESCRIPTION = "status-description";
+    private final static String APPLICATION_PROPERTY_STATUS_CODE_TAG = "status-code";
+    private final static String APPLICATION_PROPERTY_STATUS_DESCRIPTION_TAG = "status-description";
 
     private static final String RECEIVER_LINK_ENDPOINT_PATH = "$cbs";
     private static final String RECEIVER_LINK_TAG_PREFIX = "cbs-receiver";
@@ -86,14 +86,14 @@ public final class CbsReceiverLinkHandler extends ReceiverLinkHandler
                 for (Map.Entry<String, Object> entry : applicationProperties.entrySet())
                 {
                     String propertyKey = entry.getKey();
-                    if (propertyKey.equals(APPLICATION_PROPERTY_STATUS_CODE) && entry.getValue() instanceof Integer)
+                    if (propertyKey.equals(APPLICATION_PROPERTY_STATUS_CODE_TAG) && entry.getValue() instanceof Integer)
                     {
                         int authenticationResponseCode = (int) entry.getValue();
 
                         String statusDescription = "";
-                        if (applicationProperties.containsKey(APPLICATION_PROPERTY_STATUS_DESCRIPTION))
+                        if (applicationProperties.containsKey(APPLICATION_PROPERTY_STATUS_DESCRIPTION_TAG))
                         {
-                            statusDescription = (String) applicationProperties.get(APPLICATION_PROPERTY_STATUS_DESCRIPTION);
+                            statusDescription = (String) applicationProperties.get(APPLICATION_PROPERTY_STATUS_DESCRIPTION_TAG);
                         }
 
                         DeliveryState ackType = authenticationMessageCallback.handleAuthenticationResponseMessage(authenticationResponseCode, statusDescription);
@@ -104,7 +104,7 @@ public final class CbsReceiverLinkHandler extends ReceiverLinkHandler
             }
             else
             {
-                log.warn("Could not handle authentication message because it had no application properties or had no system properties");
+                log.warn("Could not handle authentication message because it had no application properties or system properties");
             }
         }
         else

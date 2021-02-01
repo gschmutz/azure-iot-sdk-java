@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Every SAS token based authentication over AMQP requires a CBS session with a sender and receiver link. This
+ * Every token based authentication over AMQP requires a CBS session with a sender and receiver link. This
  * class defines the sender link which proactively sends renewed sas tokens to keep the device sessions authenticated.
  */
 @Slf4j

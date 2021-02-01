@@ -16,6 +16,7 @@ import com.microsoft.azure.sdk.iot.deps.ws.impl.WebSocketImpl;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
 import com.microsoft.azure.sdk.iot.service.ProxyOptions;
 import com.microsoft.azure.sdk.iot.service.Tools;
+import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.engine.Connection;
@@ -24,6 +25,8 @@ import org.apache.qpid.proton.engine.Session;
 import org.apache.qpid.proton.engine.SslDomain;
 import org.apache.qpid.proton.engine.Transport;
 import org.apache.qpid.proton.engine.impl.TransportInternal;
+import org.apache.qpid.proton.reactor.FlowController;
+import org.apache.qpid.proton.reactor.Handshaker;
 import org.apache.qpid.proton.reactor.Reactor;
 
 import javax.net.ssl.SSLContext;
@@ -92,6 +95,14 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
         this.userName = userName;
         this.sasToken = sasToken;
         this.sslContext = sslContext; // if null, a default SSLContext will be generated for the user
+
+        // Enables proton-j to automatically mirror the local state of the client with the remote state. For instance,
+        // if the service closes a session, this handshaker will automatically close the session locally as well.
+        add(new Handshaker());
+
+        // Enables proton-j to automatically give link credit back to the service on all the client side receiver links
+        // after successfully processing a message.
+        add(new FlowController());
     }
 
     protected AmqpConnectionHandler(
@@ -123,6 +134,14 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
         this.sslContext = sslContext; // if null, a default SSLContext will be generated for the user
         this.authenticationTokenProvider = authenticationTokenProvider;
         this.authorizationType = authorizationType;
+
+        // Enables proton-j to automatically mirror the local state of the client with the remote state. For instance,
+        // if the service closes a session, this handshaker will automatically close the session locally as well.
+        add(new Handshaker());
+
+        // Enables proton-j to automatically give link credit back to the service on all the client side receiver links
+        // after successfully processing a message.
+        add(new FlowController());
     }
 
     @Override
@@ -279,8 +298,8 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
     }
 
     @Override
-    public void onAuthenticationFailed(Exception e)
+    public void onAuthenticationFailed(IotHubException e)
     {
-        this.savedException = new IOException("Failed to authenticate connection", e);
+        this.savedException = e;
     }
 }
