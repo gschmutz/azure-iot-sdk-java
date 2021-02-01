@@ -5,8 +5,8 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
+import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
-import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
 import com.microsoft.azure.sdk.iot.service.ProxyOptions;
 import com.microsoft.azure.sdk.iot.service.transport.TransportUtils;
@@ -21,8 +21,6 @@ import org.apache.qpid.proton.engine.EndpointState;
 import org.apache.qpid.proton.engine.Event;
 import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Session;
-import org.apache.qpid.proton.reactor.FlowController;
-import org.apache.qpid.proton.reactor.Handshaker;
 
 import javax.net.ssl.SSLContext;
 import java.util.HashMap;
@@ -112,7 +110,7 @@ public class AmqpFeedbackReceivedHandler extends AmqpConnectionHandler
     AmqpFeedbackReceivedHandler(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            TokenCredentialType authorizationType,
+            CbsAuthorizationType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             AmqpFeedbackReceivedEvent amqpFeedbackReceivedEvent,
             ProxyOptions proxyOptions,

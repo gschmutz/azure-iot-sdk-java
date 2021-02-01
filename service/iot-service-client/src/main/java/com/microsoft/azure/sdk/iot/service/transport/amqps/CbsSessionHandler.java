@@ -3,9 +3,9 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
+import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
-import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.transport.amqp.ErrorLoggingBaseHandlerWithCleanup;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,6 @@ import org.apache.qpid.proton.engine.Receiver;
 import org.apache.qpid.proton.engine.Sender;
 import org.apache.qpid.proton.engine.Session;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -33,11 +32,11 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
     private CbsReceiverLinkHandler cbsReceiverLinkHandler;
     private CbsSessionStateCallback cbsSessionStateCallback;
     private final TokenCredential authenticationTokenProvider;
-    private final TokenCredentialType authorizationType;
+    private final CbsAuthorizationType authorizationType;
     private boolean senderLinkOpened = false;
     private boolean receiverLinkOpened = false;
 
-    CbsSessionHandler(Session session, CbsSessionStateCallback cbsSessionStateCallback, TokenCredential authenticationTokenProvider, TokenCredentialType authorizationType)
+    CbsSessionHandler(Session session, CbsSessionStateCallback cbsSessionStateCallback, TokenCredential authenticationTokenProvider, CbsAuthorizationType authorizationType)
     {
         this.session = session;
 

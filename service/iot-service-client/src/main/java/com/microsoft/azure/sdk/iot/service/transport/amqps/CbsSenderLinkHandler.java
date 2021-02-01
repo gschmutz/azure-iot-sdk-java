@@ -3,10 +3,10 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
+import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
-import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.messaging.AmqpValue;
@@ -43,10 +43,14 @@ public final class CbsSenderLinkHandler extends SenderLinkHandler
     private static final String PUT_TOKEN_OPERATION_VALUE = "put-token";
 
     private final TokenCredential authenticationTokenProvider;
-    private final TokenCredentialType authorizationType;
+    private final CbsAuthorizationType authorizationType;
     private AccessToken currentAccessToken;
 
-    CbsSenderLinkHandler(Sender sender, LinkStateCallback linkStateCallback, TokenCredential authenticationTokenProvider, TokenCredentialType authorizationType)
+    CbsSenderLinkHandler(
+            Sender sender,
+            LinkStateCallback linkStateCallback,
+            TokenCredential authenticationTokenProvider,
+            CbsAuthorizationType authorizationType)
     {
         super(sender, UUID.randomUUID().toString(), linkStateCallback);
 

@@ -5,12 +5,12 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
+import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.proton.transport.proxy.ProxyHandler;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyHandlerImpl;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyImpl;
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
-import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.transport.amqp.ErrorLoggingBaseHandlerWithCleanup;
 import com.microsoft.azure.sdk.iot.deps.ws.impl.WebSocketImpl;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
@@ -49,7 +49,7 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
     protected String userName;
     protected String sasToken;
     protected TokenCredential authenticationTokenProvider;
-    protected TokenCredentialType authorizationType;
+    protected CbsAuthorizationType authorizationType;
     protected final IotHubServiceClientProtocol iotHubServiceClientProtocol;
     protected final ProxyOptions proxyOptions;
     protected final SSLContext sslContext;
@@ -108,7 +108,7 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
     protected AmqpConnectionHandler(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            TokenCredentialType authorizationType,
+            CbsAuthorizationType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ProxyOptions proxyOptions,
             SSLContext sslContext)

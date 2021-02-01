@@ -5,8 +5,8 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
+import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
-import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
 import com.microsoft.azure.sdk.iot.service.ProxyOptions;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
@@ -18,7 +18,6 @@ import org.apache.qpid.proton.amqp.Symbol;
 import org.apache.qpid.proton.amqp.messaging.*;
 import org.apache.qpid.proton.amqp.transport.DeliveryState;
 import org.apache.qpid.proton.engine.*;
-import org.apache.qpid.proton.reactor.Handshaker;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -110,7 +109,7 @@ public class AmqpSendHandler extends AmqpConnectionHandler
     AmqpSendHandler(
             String hostName,
             TokenCredential tokenProvider,
-            TokenCredentialType authorizationType,
+            CbsAuthorizationType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ProxyOptions proxyOptions,
             SSLContext sslContext)
