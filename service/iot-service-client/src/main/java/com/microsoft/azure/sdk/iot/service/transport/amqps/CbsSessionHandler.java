@@ -97,7 +97,7 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
         if (status == 200)
         {
             log.debug("CBS session successfully authenticated");
-            this.cbsSessionStateCallback.onAuthenticationSucceeded(this.session);
+            this.cbsSessionStateCallback.onAuthenticationSucceeded();
         }
         else
         {

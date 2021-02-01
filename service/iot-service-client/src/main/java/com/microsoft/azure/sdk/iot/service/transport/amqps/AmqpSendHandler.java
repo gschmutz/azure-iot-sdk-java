@@ -240,35 +240,32 @@ public class AmqpSendHandler extends AmqpConnectionHandler
     @Override
     public void onDelivery(Event event)
     {
-        if (event.getType() == Event.Type.DELIVERY)
+        log.trace("Acknowledgement arrived for sent cloud to device message with correlation id {}", this.correlationId);
+
+        Delivery d = event.getDelivery();
+
+        DeliveryState remoteState = d.getRemoteState();
+
+        amqpResponse = new AmqpResponseVerification(remoteState);
+
+        d.settle();
+
+        Sender snd = event.getSender();
+
+        if (snd.getLocalState() == EndpointState.ACTIVE)
         {
-            log.trace("Acknowledgement arrived for sent cloud to device message with correlation id {}", this.correlationId);
-
-            Delivery d = event.getDelivery();
-
-            DeliveryState remoteState = d.getRemoteState();
-
-            amqpResponse = new AmqpResponseVerification(remoteState);
-
-            d.settle();
-
-            Sender snd = event.getSender();
-
-            if (snd.getLocalState() == EndpointState.ACTIVE)
+            // By closing the link locally, proton-j will fire an event onLinkLocalClose. Within ErrorLoggingBaseHandlerWithCleanup,
+            // onLinkLocalClose closes the session locally and eventually the connection and reactor
+            if (remoteState.getClass().equals(Accepted.class))
             {
-                // By closing the link locally, proton-j will fire an event onLinkLocalClose. Within ErrorLoggingBaseHandlerWithCleanup,
-                // onLinkLocalClose closes the session locally and eventually the connection and reactor
-                if (remoteState.getClass().equals(Accepted.class))
-                {
-                    log.debug("Closing AMQP cloud to device message sender link since the message was delivered");
-                }
-                else
-                {
-                    log.debug("Closing AMQP cloud to device message sender link since the message failed to be delivered");
-                }
-
-                snd.close();
+                log.debug("Closing AMQP cloud to device message sender link since the message was delivered");
             }
+            else
+            {
+                log.debug("Closing AMQP cloud to device message sender link since the message failed to be delivered");
+            }
+
+            snd.close();
         }
     }
 
@@ -293,7 +290,7 @@ public class AmqpSendHandler extends AmqpConnectionHandler
     }
 
     @Override
-    public void onAuthenticationSucceeded(Session session)
+    public void onAuthenticationSucceeded()
     {
         // Only open the session and sending link if this authentication was for the first open. This callback
         // will be executed again after every proactive renewal, but nothing needs to be done after a proactive renewal

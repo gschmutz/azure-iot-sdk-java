@@ -158,7 +158,7 @@ public class AmqpFileUploadNotificationReceivedHandler extends AmqpConnectionHan
     }
 
     @Override
-    public void onAuthenticationSucceeded(Session session)
+    public void onAuthenticationSucceeded()
     {
         // Only open the session and receiver link if this authentication was for the first open. This callback
         // will be executed again after every proactive renewal, but nothing needs to be done after a proactive renewal

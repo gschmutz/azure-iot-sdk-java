@@ -126,7 +126,7 @@ public abstract class SenderLinkHandler extends BaseHandler
 
     int sendMessageAndGetDeliveryTag(MessageImpl protonMessage)
     {
-        //Callers of this method are responsible for putting the returned delivery tag into the inProgressMessages map
+        // Callers of this method are responsible for putting the returned delivery tag into the inProgressMessages map
         // so that this link can respond to this message being acknowledged appropriately
 
         //want to avoid negative delivery tags since -1 is the designated failure value
