@@ -183,6 +183,9 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
                 ((TransportInternal)transport).addTransportLayer(webSocket);
             }
 
+            // Note that this does not mean that the connection will not be authenticated. This simply defers authentication
+            // to the claims based security model that IoT Hub implements wherein the client sends the authentication token
+            // over the CBS link rather than doing a sasl.plain(username, password) call at this point.
             transport.sasl().setMechanisms("ANONYMOUS");
 
             SslDomain domain = makeDomain();
@@ -226,6 +229,8 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
         this.connection = event.getConnection();
         this.connectionOpenedRemotely = true;
 
+        // Once the connection opens, get that connection and make it create a new session that will serve as the CBS
+        // session where authentication will take place.
         Session cbsSession = event.getConnection().session();
         new CbsSessionHandler(
                 cbsSession,
