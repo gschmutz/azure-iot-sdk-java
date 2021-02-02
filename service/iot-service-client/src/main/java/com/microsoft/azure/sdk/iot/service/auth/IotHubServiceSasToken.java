@@ -47,7 +47,7 @@ public final class IotHubServiceSasToken
 
     /**
      * Constructor. Generates a SAS token that grants access to an IoT Hub for
-     * the specified amount of time. (1 year specified in DEFAULT_TOKEN_LIFESPAN_SECONDS)
+     * the default amount of time of 1 hour.
      *
      * @param iotHubConnectionString Connection string object containing the connection parameters
      */
@@ -58,7 +58,7 @@ public final class IotHubServiceSasToken
 
     /**
      * Constructor. Generates a SAS token that grants access to an IoT Hub for
-     * the specified amount of time. (1 year specified in DEFAULT_TOKEN_LIFESPAN_SECONDS)
+     * the specified amount of time.
      *
      * @param iotHubConnectionString Connection string object containing the connection parameters.
      * @param tokenLifespanSeconds The number of seconds that the created SAS token will be valid for.

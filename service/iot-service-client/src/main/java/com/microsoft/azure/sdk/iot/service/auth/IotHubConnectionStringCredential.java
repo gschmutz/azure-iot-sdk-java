@@ -54,30 +54,35 @@ public class IotHubConnectionStringCredential implements TokenCredential
     @Override
     public Mono<AccessToken> getToken(TokenRequestContext tokenRequestContext)
     {
-        if (this.serviceSasToken == null)
+        // Only one thread within the SDK will call this method, but this synchronization is in case a user provides the same
+        // instance of this class to multiple service clients.
+        synchronized (this)
         {
-            this.serviceSasToken = new IotHubServiceSasToken(this.iotHubConnectionString, this.tokenLifespanSeconds);
+            if (this.serviceSasToken == null)
+            {
+                this.serviceSasToken = new IotHubServiceSasToken(this.iotHubConnectionString, this.tokenLifespanSeconds);
+            }
+
+            long millisecondsToExpiry = this.serviceSasToken.getExpiryTimeMillis() - System.currentTimeMillis();
+
+            // Want to proactively renew the token at 15% of the SAS token's lifespan in order to avoid clock skew issues
+            // Note that this equation is basically this.serviceSasToken.getTokenLifespanSeconds() * .15 * 1000, but this equation
+            // doesn't require casting any doubles to ints so it is a bit safer
+            long proactiveRenewalTimeMillis = this.serviceSasToken.getTokenLifespanSeconds() * 150;
+
+            if (millisecondsToExpiry <= proactiveRenewalTimeMillis)
+            {
+                // by instantiating a new IotHubServiceSasToken, a new SAS token can be retrieved
+                this.serviceSasToken = new IotHubServiceSasToken(this.iotHubConnectionString, this.tokenLifespanSeconds);
+            }
+
+            OffsetDateTime sasTokenExpiryOffsetDateTime =
+                    OffsetDateTime.ofInstant(
+                            Instant.ofEpochMilli(this.serviceSasToken.getExpiryTimeMillis()), ZoneId.systemDefault());
+
+            AccessToken accessToken = new AccessToken(this.serviceSasToken.toString(), sasTokenExpiryOffsetDateTime);
+
+            return Mono.just(accessToken);
         }
-
-        long millisecondsToExpiry = this.serviceSasToken.getExpiryTimeMillis() - System.currentTimeMillis();
-
-        // Want to proactively renew the token at 15% of the SAS token's lifespan in order to avoid clock skew issues
-        // Note that this equation is basically this.serviceSasToken.getTokenLifespanSeconds() * .15 * 1000, but this equation
-        // doesn't require casting any doubles to ints so it is a bit safer
-        long proactiveRenewalTimeMillis = this.serviceSasToken.getTokenLifespanSeconds() * 150;
-
-        if (millisecondsToExpiry <= proactiveRenewalTimeMillis)
-        {
-            // by instantiating a new IotHubServiceSasToken, a new SAS token can be retrieved
-            this.serviceSasToken = new IotHubServiceSasToken(this.iotHubConnectionString, this.tokenLifespanSeconds);
-        }
-
-        OffsetDateTime sasTokenExpiryOffsetDateTime =
-                OffsetDateTime.ofInstant(
-                        Instant.ofEpochMilli(this.serviceSasToken.getExpiryTimeMillis()), ZoneId.systemDefault());
-
-        AccessToken accessToken = new AccessToken(this.serviceSasToken.toString(), sasTokenExpiryOffsetDateTime);
-
-        return Mono.just(accessToken);
     }
 }
