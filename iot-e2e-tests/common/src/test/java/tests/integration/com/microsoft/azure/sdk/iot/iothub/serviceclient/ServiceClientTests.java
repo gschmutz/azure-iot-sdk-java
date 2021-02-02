@@ -315,6 +315,7 @@ public class ServiceClientTests extends IntegrationTest
             }
         }
 
+        feedbackReceiver.close();
         serviceClient.close();
         registryManager.close();
     }
@@ -376,6 +377,7 @@ public class ServiceClientTests extends IntegrationTest
             }
         }
 
+        fileUploadNotificationReceiver.close();
         serviceClient.close();
         registryManager.close();
     }
