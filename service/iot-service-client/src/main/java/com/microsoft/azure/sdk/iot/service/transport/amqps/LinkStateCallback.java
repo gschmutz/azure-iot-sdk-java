@@ -14,7 +14,7 @@ public interface LinkStateCallback
     void onSenderLinkRemoteOpen();
 
     /**
-     * Callback that executes when the sender link has opened successfully
+     * Callback that executes when the receiver link has opened successfully
      */
     void onReceiverLinkRemoteOpen();
 }
