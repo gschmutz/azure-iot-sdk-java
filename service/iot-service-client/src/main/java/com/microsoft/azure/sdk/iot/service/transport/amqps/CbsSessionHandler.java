@@ -70,7 +70,7 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
     @Override
     public void onSessionLocalClose(Event e)
     {
-        log.trace("CBS session closed remotely");
+        log.trace("CBS session closed locally");
         this.session.getConnection().close();
 
         this.cbsSenderLinkHandler.close();
