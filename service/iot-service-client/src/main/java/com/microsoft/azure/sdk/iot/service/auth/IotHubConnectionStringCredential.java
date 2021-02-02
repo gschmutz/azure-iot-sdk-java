@@ -16,6 +16,7 @@ import java.time.ZoneId;
 /**
  * Implementation of {@link TokenCredential} that takes your IoT Hub's connection string and generates SAS tokens.
  * This implementation will cache previously generated SAS tokens and will only renew them once the previous SAS token
+ * is close to expiring.
  */
 public class IotHubConnectionStringCredential implements TokenCredential
 {
