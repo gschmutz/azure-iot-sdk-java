@@ -3,7 +3,11 @@
 
 package com.microsoft.azure.sdk.iot.service.devicetwin;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.IotHubConnectionString;
+import com.microsoft.azure.sdk.iot.service.Tools;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubExceptionManager;
@@ -16,6 +20,7 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Set of common operations for Twin and Method.
@@ -59,74 +64,56 @@ public class DeviceOperations
             long timeoutInMs) 
             throws IOException, IotHubException, IllegalArgumentException
     {
-        /* Codes_SRS_DEVICE_OPERATIONS_21_001: [The request shall throw IllegalArgumentException if the provided `iotHubConnectionString` is null.] */
-        if(iotHubConnectionString == null)
+        if (iotHubConnectionString == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null connection string");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_002: [The request shall throw IllegalArgumentException if the provided `url` is null.] */
-        if(url == null)
+        if (url == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null URL");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_003: [The request shall throw IllegalArgumentException if the provided `method` is null.] */
-        if(method == null)
+        if (method == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null http method");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_004: [The request shall throw IllegalArgumentException if the provided `payload` is null.] */
-        if(payload == null)
+        if (payload == null)
         {
             // This is an odd requirement, but since we won't use this API since its deprecation, it will stay.
             throw new IllegalArgumentException("Http requests must provide a non-null URL");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_99_018: [The request shall throw IllegalArgumentException if the provided `timeoutInMs` exceed Integer.MAX_VALUE.] */
-        if((timeoutInMs + DEFAULT_HTTP_TIMEOUT_MS) > Integer.MAX_VALUE) 
+        if ((timeoutInMs + DEFAULT_HTTP_TIMEOUT_MS) > Integer.MAX_VALUE)
         {
             throw new IllegalArgumentException("HTTP Request timeout shouldn't not exceed " + timeoutInMs + DEFAULT_HTTP_TIMEOUT_MS + " milliseconds");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_006: [The request shall create a new SASToken with the ServiceConnect rights.] */
         String sasTokenString = new IotHubServiceSasToken(iotHubConnectionString).toString();
-        /* Codes_SRS_DEVICE_OPERATIONS_21_007: [If the SASToken is null or empty, the request shall throw IOException.] */
-         if((sasTokenString == null) || sasTokenString.isEmpty())
+         if (Tools.isNullOrEmpty(sasTokenString))
         {
             throw new IOException("Illegal sasToken null or empty");
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_008: [The request shall create a new HttpRequest with the provided `url`, http `method`, and `payload`.] */
         HttpRequest request = new HttpRequest(url, method, payload);
-
-        /* Codes_SRS_DEVICE_OPERATIONS_21_009: [The request shall add to the HTTP header the sum of timeout and default timeout in milliseconds.] */
         request.setReadTimeoutMillis((int)(timeoutInMs + DEFAULT_HTTP_TIMEOUT_MS));
-        
-        /* Codes_SRS_DEVICE_OPERATIONS_21_010: [The request shall add to the HTTP header an `authorization` key with the SASToken.] */
         request.setHeaderField(AUTHORIZATION, sasTokenString);
 
-        //Codes_SRS_DEVICE_OPERATIONS_21_011: [If the requestId is not null or empty, the request shall add to the HTTP header a Request-Id key with a new unique string value for every request.]
-        if((requestId != null) && !requestId.isEmpty())
+        if (Tools.isNullOrEmpty(requestId))
         {
-            /* Codes_SRS_DEVICE_OPERATIONS_21_011: [The request shall add to the HTTP header a `Request-Id` key with a new unique string value for every request.] */
             request.setHeaderField(REQUEST_ID, requestId);
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_012: [The request shall add to the HTTP header a `User-Agent` key with the client Id and service version.] */
         request.setHeaderField(USER_AGENT, TransportUtils.javaServiceClientIdentifier + TransportUtils.serviceVersion);
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_013: [The request shall add to the HTTP header a `Accept` key with `application/json`.] */
         request.setHeaderField(ACCEPT, ACCEPT_VALUE);
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_014: [The request shall add to the HTTP header a `Content-Type` key with `application/json; charset=utf-8`.] */
         request.setHeaderField(CONTENT_TYPE, ACCEPT_VALUE + "; " + ACCEPT_CHARSET);
 
         if (headers != null)
         {
-            //SRS_DEVICE_OPERATIONS_25_019: [The request shall add to the HTTP header all the additional custom headers set for this request.]
-            for(Map.Entry<String, String> header : headers.entrySet())
+            for (Map.Entry<String, String> header : headers.entrySet())
             {
                 request.setHeaderField(header.getKey(), header.getValue());
             }
@@ -134,13 +121,8 @@ public class DeviceOperations
             headers = null;
         }
 
-        /* Codes_SRS_DEVICE_OPERATIONS_21_015: [The request shall send the created request and get the response.] */
         HttpResponse response = request.send();
-
-        /* Codes_SRS_DEVICE_OPERATIONS_21_016: [If the resulted HttpResponseStatus represents fail, the request shall throw proper Exception by calling httpResponseVerification.] */
         IotHubExceptionManager.httpResponseVerification(response);
-        
-        /* Codes_SRS_DEVICE_OPERATIONS_21_017: [If the resulted status represents success, the request shall return the http response.] */
         return response;
     }
 
@@ -170,23 +152,23 @@ public class DeviceOperations
             Proxy proxy)
             throws IOException, IotHubException, IllegalArgumentException
     {
-        if(iotHubConnectionString == null)
+        if (iotHubConnectionString == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null connection string");
         }
 
-        if(url == null)
+        if (url == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null URL");
         }
 
-        if(method == null)
+        if (method == null)
         {
             throw new IllegalArgumentException("Http requests must provide a non-null http method");
         }
 
         String sasTokenString = new IotHubServiceSasToken(iotHubConnectionString).toString();
-        if((sasTokenString == null) || sasTokenString.isEmpty())
+        if (Tools.isNullOrEmpty(sasTokenString))
         {
             throw new IOException("Illegal sasToken null or empty");
         }
@@ -204,7 +186,7 @@ public class DeviceOperations
         request.setReadTimeoutMillis(readTimeout);
         request.setConnectTimeoutMillis(connectTimeout);
 
-        if((requestId != null) && !requestId.isEmpty())
+        if (Tools.isNullOrEmpty(requestId))
         {
             request.setHeaderField(REQUEST_ID, requestId);
         }
@@ -216,7 +198,84 @@ public class DeviceOperations
 
         if (headers != null)
         {
-            for(Map.Entry<String, String> header : headers.entrySet())
+            for (Map.Entry<String, String> header : headers.entrySet())
+            {
+                request.setHeaderField(header.getKey(), header.getValue());
+            }
+
+            headers = null;
+        }
+
+        HttpResponse response = request.send();
+        IotHubExceptionManager.httpResponseVerification(response);
+        return response;
+    }
+
+    /**
+     * Send a http request to the IoTHub using the Twin/Method standard, and return its response.
+     *
+     * @param authenticationTokenProvider The authentication token provider that will be used to authorize the request
+     * @param url is the Twin URL for the device ID.
+     * @param method is the HTTP method (GET, POST, DELETE, PATCH, PUT).
+     * @param payload is the array of bytes that contains the payload.
+     * @param requestId is an unique number that identify the request.
+     * @param connectTimeout the http connect timeout to use, in milliseconds.
+     * @param readTimeout the http read timeout to use, in milliseconds.
+     * @param proxy the proxy to use, or null if no proxy will be used.
+     * @return the result of the request.
+     * @throws IotHubException This exception is thrown if the response verification failed.
+     * @throws IOException This exception is thrown if the IO operation failed.
+     */
+    public static HttpResponse request(
+            TokenCredential authenticationTokenProvider,
+            URL url,
+            HttpMethod method,
+            byte[] payload,
+            String requestId,
+            int connectTimeout,
+            int readTimeout,
+            Proxy proxy)
+            throws IOException, IotHubException, IllegalArgumentException
+    {
+        Objects.requireNonNull(authenticationTokenProvider);
+
+        if (url == null)
+        {
+            throw new IllegalArgumentException("Http requests must provide a non-null URL");
+        }
+
+        if (method == null)
+        {
+            throw new IllegalArgumentException("Http requests must provide a non-null http method");
+        }
+
+        HttpRequest request;
+        if (proxy != null)
+        {
+            request = new HttpRequest(url, method, payload, proxy);
+        }
+        else
+        {
+            request = new HttpRequest(url, method, payload);
+        }
+
+        request.setReadTimeoutMillis(readTimeout);
+        request.setConnectTimeoutMillis(connectTimeout);
+
+        if (Tools.isNullOrEmpty(requestId))
+        {
+            request.setHeaderField(REQUEST_ID, requestId);
+        }
+
+        String accessToken = authenticationTokenProvider.getToken(new TokenRequestContext()).block().getToken();
+        request.setHeaderField(AUTHORIZATION, accessToken);
+        request.setHeaderField(USER_AGENT, TransportUtils.javaServiceClientIdentifier + TransportUtils.serviceVersion);
+        request.setHeaderField(ACCEPT, ACCEPT_VALUE);
+        request.setHeaderField(CONTENT_TYPE, ACCEPT_VALUE + "; " + ACCEPT_CHARSET);
+
+        if (headers != null)
+        {
+            for (Map.Entry<String, String> header : headers.entrySet())
             {
                 request.setHeaderField(header.getKey(), header.getValue());
             }
@@ -238,11 +297,9 @@ public class DeviceOperations
     {
         if (httpHeaders == null || httpHeaders.size() == 0)
         {
-            //SRS_DEVICE_OPERATIONS_25_021: [If the headers map is null or empty then this method shall throw IllegalArgumentException.]
             throw new IllegalArgumentException("Null or Empty headers can't be set");
         }
 
-        //SRS_DEVICE_OPERATIONS_25_020: [This method shall set the headers map to be used for next request only.]
         headers = httpHeaders;
     }
 }

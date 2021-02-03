@@ -5,8 +5,10 @@
 
 package com.microsoft.azure.sdk.iot.service.devicetwin;
 
+import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.sdk.iot.deps.serializer.ParserUtility;
 import com.microsoft.azure.sdk.iot.deps.serializer.QueryRequestParser;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.IotHubConnectionString;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import com.microsoft.azure.sdk.iot.service.transport.http.HttpMethod;
@@ -166,10 +168,12 @@ public class Query
      * @deprecated use {@link #sendQueryRequest(IotHubConnectionString, URL, HttpMethod, int, int, Proxy)} instead.
      */
     @Deprecated
-    public QueryResponse sendQueryRequest(IotHubConnectionString iotHubConnectionString,
-                                   URL url,
-                                   HttpMethod method,
-                                   Long timeoutInMs) throws IOException, IotHubException
+    public QueryResponse sendQueryRequest(
+            IotHubConnectionString iotHubConnectionString,
+            URL url,
+            HttpMethod method,
+            Long timeoutInMs)
+            throws IOException, IotHubException
     {
         if (iotHubConnectionString == null || url == null || method == null)
         {
@@ -259,12 +263,14 @@ public class Query
      * @throws IOException If any of the input parameters are not valid.
      * @throws IotHubException If HTTP response other then status ok is received.
      */
-    public QueryResponse sendQueryRequest(IotHubConnectionString iotHubConnectionString,
-                                          URL url,
-                                          HttpMethod method,
-                                          int httpConnectTimeout,
-                                          int httpReadTimeout,
-                                          Proxy proxy) throws IOException, IotHubException
+    public QueryResponse sendQueryRequest(
+            IotHubConnectionString iotHubConnectionString,
+            URL url,
+            HttpMethod method,
+            int httpConnectTimeout,
+            int httpReadTimeout,
+            Proxy proxy)
+            throws IOException, IotHubException
     {
         if (iotHubConnectionString == null || url == null || method == null)
         {
@@ -335,12 +341,96 @@ public class Query
     }
 
     /**
+     * Sends request for the query to the IotHub.
+     *
+     * @param authenticationTokenProvider The custom {@link TokenCredential} that will provide authentication tokens to
+     *                                    this library when they are needed.
+     * @param url URL to Query on.
+     * @param method HTTP Method for the requesting a query.
+     * @param httpConnectTimeout the http connect timeout to use for this request.
+     * @param httpReadTimeout the http read timeout to use for this request.
+     * @param proxy the proxy to use, or null if no proxy should be used.
+     * @return QueryResponse object which holds the response Iterator.
+     * @throws IOException If any of the input parameters are not valid.
+     * @throws IotHubException If HTTP response other then status ok is received.
+     */
+    public QueryResponse sendQueryRequest(
+            TokenCredential authenticationTokenProvider,
+            URL url,
+            HttpMethod method,
+            int httpConnectTimeout,
+            int httpReadTimeout,
+            Proxy proxy)
+            throws IOException, IotHubException
+    {
+        this.url = url;
+        this.httpMethod = method;
+
+        this.httpConnectTimeout = httpConnectTimeout;
+        this.httpReadTimeout = httpReadTimeout;
+
+        this.proxy = proxy;
+
+        byte[] payload;
+        Map<String, String> queryHeaders = new HashMap<>();
+
+        if (this.requestContinuationToken != null)
+        {
+            queryHeaders.put(CONTINUATION_TOKEN_KEY, requestContinuationToken);
+        }
+        queryHeaders.put(PAGE_SIZE_KEY, String.valueOf(pageSize));
+
+        DeviceOperations.setHeaders(queryHeaders);
+
+        if (isSqlQuery)
+        {
+            QueryRequestParser requestParser = new QueryRequestParser(this.query);
+            payload = requestParser.toJson().getBytes();
+        }
+        else
+        {
+            payload = new byte[0];
+        }
+
+        HttpResponse httpResponse = DeviceOperations.request(authenticationTokenProvider, url, method, payload, null, httpConnectTimeout, httpReadTimeout, proxy);
+
+        this.responseContinuationToken = null;
+        Map<String, String> headers = httpResponse.getHeaderFields();
+        for (Map.Entry<String, String> header : headers.entrySet())
+        {
+            switch (header.getKey())
+            {
+                case CONTINUATION_TOKEN_KEY:
+                    this.responseContinuationToken = header.getValue();
+                    break;
+                case ITEM_TYPE_KEY:
+                    this.responseQueryType = QueryType.fromString(header.getValue());
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (this.responseQueryType == null || this.responseQueryType == QueryType.UNKNOWN)
+        {
+            throw new IOException("Query response type is not defined by IotHub");
+        }
+
+        if (this.requestQueryType != this.responseQueryType)
+        {
+            throw new IOException("Query response does not match query request");
+        }
+
+        this.queryResponse = new QueryResponse(new String(httpResponse.getBody()));
+        return this.queryResponse;
+    }
+
+    /**
      * Getter for the continuation token received on response
      * @return continuation token. Can be {@code null}.
      */
     private String getContinuationToken()
     {
-        //Codes_SRS_QUERY_25_014: [The method shall return the continuation token found in response to a query (which can be null).]
         return this.responseContinuationToken;
     }
 
@@ -353,17 +443,14 @@ public class Query
      */
     public boolean hasNext() throws IOException, IotHubException
     {
-        //Codes_SRS_QUERY_25_015: [The method shall return true if next element from QueryResponse is available and false otherwise.]
         boolean isNextAvailable = this.queryResponse.hasNext();
         if (!isNextAvailable && this.getContinuationToken() != null)
         {
-            //Codes_SRS_QUERY_25_021: [If no further query response is available, then this method shall continue to request query to IotHub if continuation token is available.]
             this.continueQuery(this.getContinuationToken());
             return this.queryResponse.hasNext();
         }
         else
         {
-            //Codes_SRS_QUERY_25_015: [The method shall return true if next element from QueryResponse is available and false otherwise.]
             return isNextAvailable;
         }
     }
@@ -378,14 +465,12 @@ public class Query
      */
     public Object next() throws IOException, IotHubException, NoSuchElementException
     {
-        //Codes_SRS_QUERY_25_016: [The method shall return the next element for this QueryResponse.]
        if (this.hasNext())
        {
            return queryResponse.next();
        }
        else
        {
-           //Codes_SRS_QUERY_25_022: [The method shall check if any further elements are available by calling hasNext and if none is available then it shall throw NoSuchElementException.]
            throw new NoSuchElementException();
        }
     }

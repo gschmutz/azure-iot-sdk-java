@@ -3,6 +3,8 @@
 
 package com.microsoft.azure.sdk.iot.service.digitaltwin;
 
+import com.azure.core.credential.TokenCredential;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.customized.DigitalTwinGetHeaders;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.customized.DigitalTwinUpdateHeaders;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.generated.DigitalTwins;
@@ -21,14 +23,31 @@ import java.util.List;
 public class DigitalTwinClient {
     private final DigitalTwinAsyncClient digitalTwinAsyncClient;
 
-    DigitalTwinClient(String connectionString) {
+    /**
+     * Creates an implementation instance of {@link DigitalTwins} that is used to invoke the Digital Twin features
+     * @param connectionString The IoT Hub connection string
+     * @return The instantiated DigitalTwinClient.
+     */
+    public DigitalTwinClient(String connectionString) {
         digitalTwinAsyncClient = DigitalTwinAsyncClient.createFromConnectionString(connectionString);
     }
 
     /**
      * Creates an implementation instance of {@link DigitalTwins} that is used to invoke the Digital Twin features
-     * @param connectionString The IoTHub connection string
-     * @return DigitalTwinClient
+     *
+     * @param hostName The hostname of your IoT Hub instance (For instance, "your-iot-hub.azure-devices.net")
+     * @param authenticationTokenProvider The custom {@link TokenCredential} that will provide authentication tokens to
+     *                                    this library when they are needed.
+     * @return The instantiated DigitalTwinClient.
+     */
+    public DigitalTwinClient(String hostName, TokenCredential authenticationTokenProvider) {
+        digitalTwinAsyncClient = new DigitalTwinAsyncClient(hostName, authenticationTokenProvider);
+    }
+
+    /**
+     * Creates an implementation instance of {@link DigitalTwins} that is used to invoke the Digital Twin features
+     * @param connectionString The IoT Hub connection string
+     * @return The instantiated DigitalTwinClient.
      */
     public static DigitalTwinClient createFromConnectionString(String connectionString)
     {
