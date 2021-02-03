@@ -3,9 +3,9 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.transport.amqp.ErrorLoggingBaseHandlerWithCleanup;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +31,12 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
     private CbsSenderLinkHandler cbsSenderLinkHandler;
     private CbsReceiverLinkHandler cbsReceiverLinkHandler;
     private CbsSessionStateCallback cbsSessionStateCallback;
-    private final TokenCredential authenticationTokenProvider;
-    private final CbsAuthorizationType authorizationType;
+    private TokenCredential authenticationTokenProvider;
+    private TokenCredentialType authorizationType;
     private boolean senderLinkOpened = false;
     private boolean receiverLinkOpened = false;
 
-    CbsSessionHandler(Session session, CbsSessionStateCallback cbsSessionStateCallback, TokenCredential authenticationTokenProvider, CbsAuthorizationType authorizationType)
+    CbsSessionHandler(Session session, CbsSessionStateCallback cbsSessionStateCallback, TokenCredential authenticationTokenProvider, TokenCredentialType authorizationType)
     {
         this.session = session;
 
@@ -55,6 +55,8 @@ public class CbsSessionHandler extends ErrorLoggingBaseHandlerWithCleanup implem
         this.session = event.getSession();
 
         Sender cbsSender = this.session.sender(CbsSenderLinkHandler.getCbsTag());
+
+        this.cbsSenderLinkHandler = new CbsSenderLinkHandler(cbsSender, this, this.authenticationTokenProvider, this.authorizationType);
         this.cbsSenderLinkHandler = new CbsSenderLinkHandler(cbsSender, this, this.authenticationTokenProvider, this.authorizationType);
 
         Receiver cbsReceiver = this.session.receiver(CbsReceiverLinkHandler.getCbsTag());

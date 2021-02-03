@@ -5,7 +5,6 @@
 
 package tests.unit.com.microsoft.azure.sdk.iot.service;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.sdk.iot.service.*;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
@@ -108,7 +107,7 @@ public class ServiceClientTest
         new Expectations()
         {
             {
-                amqpSend = new AmqpSend(anyString, (TokenCredential) any, (CbsAuthorizationType) any, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
+                amqpSend = new AmqpSend(anyString, (TokenCredential) any, (TokenCredentialType) any, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
             }
         };
         // Act
@@ -522,7 +521,7 @@ public class ServiceClientTest
         new Expectations()
         {
             {
-                feedbackReceiver = new FeedbackReceiver(anyString, (TokenCredential) any, (CbsAuthorizationType) any, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
+                feedbackReceiver = new FeedbackReceiver(anyString, (TokenCredential) any, (TokenCredentialType) any, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
             }
         };
         // Act

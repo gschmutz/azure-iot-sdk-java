@@ -5,8 +5,8 @@
 
 package com.microsoft.azure.sdk.iot.service;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.transport.amqps.AmqpFileUploadNotificationReceive;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,7 +78,7 @@ public class FileUploadNotificationReceiver extends Receiver
     FileUploadNotificationReceiver(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            CbsAuthorizationType authorizationType,
+            TokenCredentialType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ProxyOptions proxyOptions,
             SSLContext sslContext)

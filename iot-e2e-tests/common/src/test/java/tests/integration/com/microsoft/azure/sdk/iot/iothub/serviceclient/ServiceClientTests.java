@@ -5,9 +5,9 @@
 
 package tests.integration.com.microsoft.azure.sdk.iot.iothub.serviceclient;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.Device;
 import com.microsoft.azure.sdk.iot.service.FeedbackReceiver;
 import com.microsoft.azure.sdk.iot.service.FileUploadNotificationReceiver;
@@ -219,7 +219,7 @@ public class ServiceClientTests extends IntegrationTest
             serviceClient = new ServiceClient(
                     iotHubConnectionStringObj.getHostName(),
                     authenticationTokenProvider,
-                    CbsAuthorizationType.SHARED_ACCESS_SIGNATURE,
+                    TokenCredentialType.SHARED_ACCESS_SIGNATURE,
                     testInstance.protocol,
                     serviceClientOptions);
         }
@@ -280,7 +280,7 @@ public class ServiceClientTests extends IntegrationTest
         ServiceClient serviceClient = new ServiceClient(
                     iotHubConnectionStringObj.getHostName(),
                     authenticationTokenProvider,
-                    CbsAuthorizationType.SHARED_ACCESS_SIGNATURE,
+                    TokenCredentialType.SHARED_ACCESS_SIGNATURE,
                     testInstance.protocol,
                     serviceClientOptions);
 
@@ -342,7 +342,7 @@ public class ServiceClientTests extends IntegrationTest
         ServiceClient serviceClient = new ServiceClient(
                 iotHubConnectionStringObj.getHostName(),
                 authenticationTokenProvider,
-                CbsAuthorizationType.SHARED_ACCESS_SIGNATURE,
+                TokenCredentialType.SHARED_ACCESS_SIGNATURE,
                 testInstance.protocol,
                 serviceClientOptions);
 

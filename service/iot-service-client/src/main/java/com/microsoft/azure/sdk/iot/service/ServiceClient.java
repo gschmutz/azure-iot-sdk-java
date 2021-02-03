@@ -5,8 +5,9 @@
 
 package com.microsoft.azure.sdk.iot.service;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
+import com.azure.core.credential.AzureSasCredential;
 import com.azure.core.credential.TokenCredential;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubConnectionStringCredential;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
@@ -33,7 +34,7 @@ public class ServiceClient
     private String sasToken;
     private final IotHubServiceClientProtocol iotHubServiceClientProtocol;
     protected TokenCredential authenticationTokenProvider;
-    protected final CbsAuthorizationType tokenCredentialType;
+    protected final TokenCredentialType tokenCredentialType;
 
     private final ServiceClientOptions options;
 
@@ -116,14 +117,14 @@ public class ServiceClient
 
         this.hostName = iotHubConnectionString.hostName;
         this.authenticationTokenProvider = authenticationTokenProvider;
-        this.tokenCredentialType = CbsAuthorizationType.SHARED_ACCESS_SIGNATURE;
+        this.tokenCredentialType = TokenCredentialType.SHARED_ACCESS_SIGNATURE;
         this.iotHubServiceClientProtocol = iotHubServiceClientProtocol;
         this.options = options;
         this.amqpMessageSender =
                 new AmqpSend(
                         hostName,
                         authenticationTokenProvider,
-                        CbsAuthorizationType.SHARED_ACCESS_SIGNATURE,
+                        TokenCredentialType.SHARED_ACCESS_SIGNATURE,
                         iotHubServiceClientProtocol,
                         options.getProxyOptions(),
                         options.getSslContext());
@@ -144,7 +145,7 @@ public class ServiceClient
     public ServiceClient(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            CbsAuthorizationType tokenCredentialType,
+            TokenCredentialType tokenCredentialType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol)
     {
         this(hostName,
@@ -170,7 +171,7 @@ public class ServiceClient
     public ServiceClient(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            CbsAuthorizationType tokenCredentialType,
+            TokenCredentialType tokenCredentialType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ServiceClientOptions options)
     {
@@ -209,6 +210,47 @@ public class ServiceClient
     }
 
     /**
+     * Create a {@link ServiceClient} instance with an instance of {@link AzureSasCredential}.
+     *
+     * @param hostName The hostname of your IoT Hub instance (For instance, "your-iot-hub.azure-devices.net")
+     * @param azureSasCredential The SAS token provider that will be used for authentication.
+     * @param iotHubServiceClientProtocol The protocol to open the connection with.
+     * @return The created {@link ServiceClient} instance.
+     */
+    public ServiceClient(
+            String hostName,
+            AzureSasCredential azureSasCredential,
+            IotHubServiceClientProtocol iotHubServiceClientProtocol)
+    {
+        this(hostName,
+                azureSasCredential,
+                iotHubServiceClientProtocol,
+                ServiceClientOptions.builder().build());
+    }
+
+    /**
+     * Create a {@link ServiceClient} instance with an instance of {@link AzureSasCredential}.
+     *
+     * @param hostName The hostname of your IoT Hub instance (For instance, "your-iot-hub.azure-devices.net")
+     * @param azureSasCredential The SAS token provider that will be used for authentication.
+     * @param iotHubServiceClientProtocol The protocol to open the connection with.
+     * @param options The connection options to use when connecting to the service.
+     * @return The created {@link ServiceClient} instance.
+     */
+    public ServiceClient(
+            String hostName,
+            AzureSasCredential azureSasCredential,
+            IotHubServiceClientProtocol iotHubServiceClientProtocol,
+            ServiceClientOptions options)
+    {
+        this(hostName,
+                new AzureSasTokenCredential(azureSasCredential),
+                TokenCredentialType.SHARED_ACCESS_SIGNATURE,
+                iotHubServiceClientProtocol,
+                options);
+    }
+
+    /**
      * Initialize AMQP sender using given connection string
      *
      * @param iotHubConnectionString The ConnectionString object for the IotHub
@@ -239,7 +281,7 @@ public class ServiceClient
         this.userName = iotHubConnectionString.getUserString();
         this.sasToken = iotHubServiceSasToken.toString();
         this.iotHubServiceClientProtocol = iotHubServiceClientProtocol;
-        this.tokenCredentialType = CbsAuthorizationType.SHARED_ACCESS_SIGNATURE;
+        this.tokenCredentialType = TokenCredentialType.SHARED_ACCESS_SIGNATURE;
         this.options = options;
 
         if (this.options.getProxyOptions() != null && this.iotHubServiceClientProtocol != IotHubServiceClientProtocol.AMQPS_WS)

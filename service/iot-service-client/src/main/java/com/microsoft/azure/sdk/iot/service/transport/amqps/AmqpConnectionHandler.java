@@ -5,12 +5,13 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
+import com.azure.core.credential.AzureSasCredential;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.proton.transport.proxy.ProxyHandler;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyHandlerImpl;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyImpl;
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.transport.amqp.ErrorLoggingBaseHandlerWithCleanup;
 import com.microsoft.azure.sdk.iot.deps.ws.impl.WebSocketImpl;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
@@ -48,8 +49,8 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
     protected final String hostName;
     protected String userName;
     protected String sasToken;
-    protected TokenCredential authenticationTokenProvider;
-    protected CbsAuthorizationType authorizationType;
+    private TokenCredential authenticationTokenProvider;
+    private TokenCredentialType authorizationType;
     protected final IotHubServiceClientProtocol iotHubServiceClientProtocol;
     protected final ProxyOptions proxyOptions;
     protected final SSLContext sslContext;
@@ -84,11 +85,6 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
             throw new IllegalArgumentException("iotHubServiceClientProtocol cannot be null");
         }
 
-        this.savedException = null;
-        this.connectionOpenedRemotely = false;
-        this.sessionOpenedRemotely = false;
-        this.linkOpenedRemotely = false;
-
         this.iotHubServiceClientProtocol = iotHubServiceClientProtocol;
         this.proxyOptions = proxyOptions;
         this.hostName = hostName;
@@ -96,19 +92,13 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
         this.sasToken = sasToken;
         this.sslContext = sslContext; // if null, a default SSLContext will be generated for the user
 
-        // Enables proton-j to automatically mirror the local state of the client with the remote state. For instance,
-        // if the service closes a session, this handshaker will automatically close the session locally as well.
-        add(new Handshaker());
-
-        // Enables proton-j to automatically give link credit back to the service on all the client side receiver links
-        // after successfully processing a message.
-        add(new FlowController());
+        commonConstructorSetup();
     }
 
     protected AmqpConnectionHandler(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            CbsAuthorizationType authorizationType,
+            TokenCredentialType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ProxyOptions proxyOptions,
             SSLContext sslContext)
@@ -123,17 +113,22 @@ public abstract class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithC
             throw new IllegalArgumentException("iotHubServiceClientProtocol cannot be null");
         }
 
-        this.savedException = null;
-        this.connectionOpenedRemotely = false;
-        this.sessionOpenedRemotely = false;
-        this.linkOpenedRemotely = false;
-
         this.iotHubServiceClientProtocol = iotHubServiceClientProtocol;
         this.proxyOptions = proxyOptions;
         this.hostName = hostName;
         this.sslContext = sslContext; // if null, a default SSLContext will be generated for the user
         this.authenticationTokenProvider = authenticationTokenProvider;
         this.authorizationType = authorizationType;
+
+        commonConstructorSetup();
+    }
+
+    private void commonConstructorSetup()
+    {
+        this.savedException = null;
+        this.connectionOpenedRemotely = false;
+        this.sessionOpenedRemotely = false;
+        this.linkOpenedRemotely = false;
 
         // Enables proton-j to automatically mirror the local state of the client with the remote state. For instance,
         // if the service closes a session, this handshaker will automatically close the session locally as well.

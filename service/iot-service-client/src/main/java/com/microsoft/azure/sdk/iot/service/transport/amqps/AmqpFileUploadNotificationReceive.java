@@ -5,8 +5,8 @@
 
 package com.microsoft.azure.sdk.iot.service.transport.amqps;
 
-import com.azure.core.amqp.implementation.CbsAuthorizationType;
 import com.azure.core.credential.TokenCredential;
+import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
 import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadNotificationParser;
 import com.microsoft.azure.sdk.iot.service.FileUploadNotification;
 import com.microsoft.azure.sdk.iot.service.IotHubServiceClientProtocol;
@@ -28,7 +28,7 @@ public class AmqpFileUploadNotificationReceive implements AmqpFeedbackReceivedEv
     private String userName;
     private String sasToken;
     private TokenCredential authenticationTokenProvider;
-    private CbsAuthorizationType authorizationType;
+    private TokenCredentialType authorizationType;
     private AmqpFileUploadNotificationReceivedHandler amqpReceiveHandler;
     private FileUploadNotification fileUploadNotification;
     private final IotHubServiceClientProtocol iotHubServiceClientProtocol;
@@ -98,7 +98,7 @@ public class AmqpFileUploadNotificationReceive implements AmqpFeedbackReceivedEv
     public AmqpFileUploadNotificationReceive(
             String hostName,
             TokenCredential authenticationTokenProvider,
-            CbsAuthorizationType authorizationType,
+            TokenCredentialType authorizationType,
             IotHubServiceClientProtocol iotHubServiceClientProtocol,
             ProxyOptions proxyOptions,
             SSLContext sslContext)
