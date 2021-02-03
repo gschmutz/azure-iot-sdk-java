@@ -5,6 +5,7 @@
 
 package tests.integration.com.microsoft.azure.sdk.iot.iothub.serviceclient;
 
+import com.azure.core.credential.AzureSasCredential;
 import com.azure.core.credential.TokenCredential;
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
 import com.microsoft.azure.sdk.iot.deps.auth.TokenCredentialType;
@@ -21,6 +22,7 @@ import com.microsoft.azure.sdk.iot.service.RegistryManagerOptions;
 import com.microsoft.azure.sdk.iot.service.ServiceClient;
 import com.microsoft.azure.sdk.iot.service.ServiceClientOptions;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubConnectionStringCredential;
+import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -123,14 +125,14 @@ public class ServiceClientTests extends IntegrationTest
     @StandardTierHubOnlyTest
     public void cloudToDeviceTelemetry() throws Exception
     {
-        cloudToDeviceTelemetry(false, true, false, false);
+        cloudToDeviceTelemetry(false, true, false, false, false);
     }
 
     @Test
     @StandardTierHubOnlyTest
     public void cloudToDeviceTelemetryWithCustomSSLContext() throws Exception
     {
-        cloudToDeviceTelemetry(false, true, true, false);
+        cloudToDeviceTelemetry(false, true, true, false, false);
     }
 
     @Test
@@ -143,7 +145,7 @@ public class ServiceClientTests extends IntegrationTest
             return;
         }
 
-        cloudToDeviceTelemetry(true, true, false, false);
+        cloudToDeviceTelemetry(true, true, false, false, false);
     }
 
     @Test
@@ -156,7 +158,7 @@ public class ServiceClientTests extends IntegrationTest
             return;
         }
 
-        cloudToDeviceTelemetry(true, true, true, false);
+        cloudToDeviceTelemetry(true, true, true, false, false);
     }
 
     @Test
@@ -164,17 +166,29 @@ public class ServiceClientTests extends IntegrationTest
     @ContinuousIntegrationTest
     public void cloudToDeviceTelemetryWithNoPayload() throws Exception
     {
-        cloudToDeviceTelemetry(false, false, false, false);
+        cloudToDeviceTelemetry(false, false, false, false, false);
     }
 
     @Test
     @StandardTierHubOnlyTest
     public void cloudToDeviceTelemetryWithTokenCredential() throws Exception
     {
-        cloudToDeviceTelemetry(false, true, false, true);
+        cloudToDeviceTelemetry(false, true, false, true, false);
     }
 
-    public void cloudToDeviceTelemetry(boolean withProxy, boolean withPayload, boolean withCustomSSLContext, boolean withTokenCredential) throws Exception
+    @Test
+    @StandardTierHubOnlyTest
+    public void cloudToDeviceTelemetryWithAzureSasCredential() throws Exception
+    {
+        cloudToDeviceTelemetry(false, true, false, false, true);
+    }
+
+    public void cloudToDeviceTelemetry(
+            boolean withProxy,
+            boolean withPayload,
+            boolean withCustomSSLContext,
+            boolean withTokenCredential,
+            boolean withAzureSasCredential) throws Exception
     {
         // We remove and recreate the device for a clean start
         RegistryManager registryManager =
@@ -210,16 +224,24 @@ public class ServiceClientTests extends IntegrationTest
                         .build();
 
         ServiceClient serviceClient;
+        IotHubConnectionString iotHubConnectionStringObj =
+                IotHubConnectionStringBuilder.createIotHubConnectionString(iotHubConnectionString);
+
         if (withTokenCredential)
         {
-            IotHubConnectionString iotHubConnectionStringObj =
-                    IotHubConnectionStringBuilder.createIotHubConnectionString(iotHubConnectionString);
-
             TokenCredential authenticationTokenProvider = new IotHubConnectionStringCredential(iotHubConnectionString);
             serviceClient = new ServiceClient(
                     iotHubConnectionStringObj.getHostName(),
                     authenticationTokenProvider,
                     TokenCredentialType.SHARED_ACCESS_SIGNATURE,
+                    testInstance.protocol,
+                    serviceClientOptions);
+        }
+        else if (withAzureSasCredential)
+        {
+            serviceClient = new ServiceClient(
+                    iotHubConnectionStringObj.getHostName(),
+                    new AzureSasCredential(new IotHubServiceSasToken(iotHubConnectionStringObj).toString()),
                     testInstance.protocol,
                     serviceClientOptions);
         }
