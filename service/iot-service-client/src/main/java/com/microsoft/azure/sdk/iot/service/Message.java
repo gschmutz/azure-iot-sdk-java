@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public class Message
 {
-    private String deliveryAcknowledgementPropertyName = "iothub-ack";
+    private final String deliveryAcknowledgementPropertyName = "iothub-ack";
 
     /**
     * [Required for two way requests] Used to correlate two-way communication.
@@ -164,7 +164,7 @@ public class Message
     /**
     * A bag of user-defined properties. Value can only be strings. These do not contain system properties.
     **/
-    private Map<String,String> properties;
+    private final Map<String,String> properties;
 
     /**
     * The message body
@@ -176,7 +176,7 @@ public class Message
     **/
     public Message()
     {
-        this.properties = new HashMap<String, String>(1);
+        this.properties = new HashMap<>(1);
         this.setDeliveryAcknowledgementFinal(DeliveryAcknowledgement.Full);
         this.correlationId = UUID.randomUUID().toString();
     }

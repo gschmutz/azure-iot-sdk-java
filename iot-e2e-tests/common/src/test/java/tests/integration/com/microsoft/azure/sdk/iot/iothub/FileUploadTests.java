@@ -23,7 +23,6 @@ import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.Tools;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.*;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.annotations.ContinuousIntegrationTest;
-import tests.integration.com.microsoft.azure.sdk.iot.helpers.annotations.FlakeyTest;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.annotations.IotHubTest;
 
 import javax.net.ssl.SSLContext;
@@ -120,13 +119,13 @@ public class FileUploadTests extends IntegrationTest
 
     public FileUploadTestInstance testInstance;
 
-    public class FileUploadTestInstance
+    public static class FileUploadTestInstance
     {
         public IotHubClientProtocol protocol;
         public AuthenticationType authenticationType;
         private FileUploadState[] fileUploadState;
         private MessageState[] messageStates;
-        private boolean withProxy;
+        private final boolean withProxy;
 
         public FileUploadTestInstance(IotHubClientProtocol protocol, AuthenticationType authenticationType, boolean withProxy) throws IOException
         {
@@ -291,7 +290,7 @@ public class FileUploadTests extends IntegrationTest
 
     private void verifyNotification(FileUploadNotification fileUploadNotification, FileUploadState fileUploadState, DeviceClient deviceClient) throws IOException
     {
-        assertTrue(buildExceptionMessage("File upload notification blob size not equal to expected file length", deviceClient), fileUploadNotification.getBlobSizeInBytes() == fileUploadState.fileLength);
+        assertEquals(buildExceptionMessage("File upload notification blob size not equal to expected file length", deviceClient), (long) fileUploadNotification.getBlobSizeInBytes(), fileUploadState.fileLength);
 
         URL u = new URL(fileUploadNotification.getBlobUri());
         try (InputStream inputStream = u.openStream())
@@ -303,7 +302,7 @@ public class FileUploadTests extends IntegrationTest
             fileUploadState.fileInputStream.reset();
             int actualLen = (fileUploadState.fileLength == 0) ? (int) fileUploadState.fileLength : fileUploadState.fileInputStream.read(actualBuf, 0, (int) fileUploadState.fileLength);
             assertEquals(buildExceptionMessage("Expected length " + testLen + " but was " + actualLen, deviceClient), testLen, actualLen);
-            assertTrue(buildExceptionMessage("testBuf was different from actualBuf", deviceClient), Arrays.equals(testBuf, actualBuf));
+            assertArrayEquals(buildExceptionMessage("testBuf was different from actualBuf", deviceClient), testBuf, actualBuf);
         }
 
         assertTrue(buildExceptionMessage("File upload notification did not contain the expected blob name", deviceClient), fileUploadNotification.getBlobName().contains(fileUploadState.blobName));

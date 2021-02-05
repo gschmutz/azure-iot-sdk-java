@@ -12,12 +12,12 @@ import com.google.gson.annotations.SerializedName;
 public class MethodResult
 {
     private static final String STATUS_KEY_NAME = "status";
-    @Expose(serialize = false, deserialize = true)
+    @Expose(serialize = false)
     @SerializedName(STATUS_KEY_NAME)
     private int status;
 
     private static final String PAYLOAD_KEY_NAME = "payload";
-    @Expose(serialize = false, deserialize = true)
+    @Expose(serialize = false)
     @SerializedName(PAYLOAD_KEY_NAME)
     private Object payload;
 
@@ -32,7 +32,7 @@ public class MethodResult
         // Codes_SRS_DIRECTMETHODRESULT_34_003: [This constructor shall retrieve the payload and status from the provided json.]
         MethodResult result = new GsonBuilder().create().fromJson(json, MethodResult.class);
 
-        this.payload = result.payload != null ? result.payload : null;
+        this.payload = result.payload;
         this.status = result.status;
     }
 

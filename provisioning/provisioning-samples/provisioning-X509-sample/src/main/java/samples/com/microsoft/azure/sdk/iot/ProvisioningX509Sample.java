@@ -4,7 +4,6 @@
 package samples.com.microsoft.azure.sdk.iot;
 
 import com.microsoft.azure.sdk.iot.device.*;
-import com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientStatus;
 import com.microsoft.azure.sdk.iot.provisioning.device.*;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceClientException;
 import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProvider;
@@ -18,6 +17,7 @@ import java.util.Scanner;
 /**
  * Provisioning Sample for X509
  */
+@SuppressWarnings("CommentedOutCode") // Ignored in samples as we use these comments to show other options.
 public class ProvisioningX509Sample
 {
     private static final String idScope = "[Your ID scope here]";

@@ -29,13 +29,13 @@ public class Query
     private static final String PAGE_SIZE_KEY = "x-ms-max-item-count";
 
     private int pageSize;
-    private String query;
-    private boolean isSqlQuery;
+    private final String query;
+    private final boolean isSqlQuery;
 
     private String requestContinuationToken;
     private String responseContinuationToken;
 
-    private QueryType requestQueryType;
+    private final QueryType requestQueryType;
     private QueryType responseQueryType;
 
     private QueryResponse queryResponse;
@@ -165,6 +165,7 @@ public class Query
      * @throws IotHubException If HTTP response other then status ok is received.
      * @deprecated use {@link #sendQueryRequest(IotHubConnectionString, URL, HttpMethod, int, int, Proxy)} instead.
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public QueryResponse sendQueryRequest(IotHubConnectionString iotHubConnectionString,
                                    URL url,
@@ -185,7 +186,7 @@ public class Query
         this.httpConnectTimeout = DeviceTwinClientOptions.DEFAULT_HTTP_CONNECT_TIMEOUT_MS;
         this.httpReadTimeout = DeviceTwinClientOptions.DEFAULT_HTTP_READ_TIMEOUT_MS;
 
-        byte[] payload = null;
+        byte[] payload;
         Map<String, String> queryHeaders = new HashMap<>();
 
         if (this.requestContinuationToken != null)
@@ -280,7 +281,7 @@ public class Query
 
         this.proxy = proxy;
 
-        byte[] payload = null;
+        byte[] payload;
         Map<String, String> queryHeaders = new HashMap<>();
 
         if (this.requestContinuationToken != null)

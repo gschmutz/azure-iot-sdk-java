@@ -39,7 +39,6 @@ public final class MessageProperty {
         reservedPropertyNames.add("iothub-operation");
         reservedPropertyNames.add("iothub-partition-key");
         reservedPropertyNames.add("iothub-ack");
-        reservedPropertyNames.add("iothub-connection-device-id");
         reservedPropertyNames.add("iothub-connection-auth-method");
         reservedPropertyNames.add("iothub-connection-auth-generation-id");
         reservedPropertyNames.add("iothub-messageid");
@@ -63,9 +62,9 @@ public final class MessageProperty {
     }
 
     /** The property name. */
-    private String name;
+    private final String name;
     /** The property value. */
-    private String value;
+    private final String value;
 
     /**
      * Constructor.

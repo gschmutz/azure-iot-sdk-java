@@ -51,7 +51,7 @@ public final class FileUploadTask implements Runnable
 {
     private static final Charset DEFAULT_IOTHUB_MESSAGE_CHARSET = StandardCharsets.UTF_8;
 
-    private HttpsTransportManager httpsTransportManager;
+    private final HttpsTransportManager httpsTransportManager;
 
     private String blobName;
     private InputStream inputStream;
@@ -121,8 +121,7 @@ public final class FileUploadTask implements Runnable
     {
         Thread.currentThread().setName(THREAD_NAME);
 
-        FileUploadCompletionNotification fileUploadCompletionNotification = null;
-        FileUploadSasUriResponse sasUriResponse = null;
+        FileUploadSasUriResponse sasUriResponse;
 
         try
         {
@@ -135,6 +134,8 @@ public final class FileUploadTask implements Runnable
             return;
         }
 
+        FileUploadCompletionNotification fileUploadCompletionNotification = new FileUploadCompletionNotification(sasUriResponse.getCorrelationId(), false, -1, "Failed to upload to storage.");
+
         try
         {
             CloudBlockBlob blob = new CloudBlockBlob(sasUriResponse.getBlobUri());
@@ -144,7 +145,6 @@ public final class FileUploadTask implements Runnable
         catch (StorageException | IOException | IllegalArgumentException | URISyntaxException e)
         {
             log.error("File upload failed to upload the stream to the blob", e);
-            fileUploadCompletionNotification = new FileUploadCompletionNotification(sasUriResponse.getCorrelationId(), false, -1, "Failed to upload to storage.");
         }
         finally
         {

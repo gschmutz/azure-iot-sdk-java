@@ -7,8 +7,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.device.auth;
 
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
 import com.microsoft.azure.sdk.iot.device.auth.IotHubAuthenticationProvider;
-import com.microsoft.azure.sdk.iot.device.auth.IotHubX509SoftwareAuthenticationProvider;
-import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import mockit.*;
 import org.junit.Test;
 
@@ -19,7 +17,6 @@ import java.security.cert.CertificateException;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 
 public class IotHubAuthenticationProviderTest
 {
@@ -29,12 +26,12 @@ public class IotHubAuthenticationProviderTest
     @Mocked
     SSLContext mockedSSLContext;
     
-    private static String expectedHostname = "hostname";
-    private static String expectedGatewayHostname = "gatewayhostname";
-    private static String expectedDeviceId = "deviceId";
-    private static String expectedModuleId = "moduleId";
+    private static final String expectedHostname = "hostname";
+    private static final String expectedGatewayHostname = "gatewayhostname";
+    private static final String expectedDeviceId = "deviceId";
+    private static final String expectedModuleId = "moduleId";
     
-    private class IotHubAuthenticationProviderMock extends IotHubAuthenticationProvider
+    private static class IotHubAuthenticationProviderMock extends IotHubAuthenticationProvider
     {
         public IotHubAuthenticationProviderMock(String hostname, String gatewayHostname, String deviceId, String moduleId)
         {

@@ -19,32 +19,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ModuleTwinSample
 {
-    private static String SAMPLE_USAGE = "The program should be called with the following args: \n"
+    private static final String SAMPLE_USAGE = "The program should be called with the following args: \n"
             + "1. [Device connection string] - String containing Hostname, Device Id, Module Id & Device Key in one of the following formats: HostName=<iothub_host_name>;deviceId=<device_id>;SharedAccessKey=<device_key>;moduleId=<module_id>\n"
             + "2. (mqtt | amqps | amqps_ws | mqtt_ws)\n";
 
-    private static String SAMPLE_USAGE_WITH_WRONG_ARGS = "Expected 2 or 3 arguments but received: %d.\n" + SAMPLE_USAGE;
-    private static String SAMPLE_USAGE_WITH_INVALID_PROTOCOL = "Expected argument 2 to be one of 'mqtt', 'amqps' or 'amqps_ws' but received %s\n" + SAMPLE_USAGE;
+    private static final String SAMPLE_USAGE_WITH_WRONG_ARGS = "Expected 2 or 3 arguments but received: %d.\n" + SAMPLE_USAGE;
+    private static final String SAMPLE_USAGE_WITH_INVALID_PROTOCOL = "Expected argument 2 to be one of 'mqtt', 'amqps' or 'amqps_ws' but received %s\n" + SAMPLE_USAGE;
 
     private enum LIGHTS{ ON, OFF }
     private enum CAMERA{ DETECTED_BURGLAR, SAFELY_WORKING }
     private static final int MAX_EVENTS_TO_REPORT = 5;
 
-    private static AtomicBoolean Succeed = new AtomicBoolean(false);
+    private static final AtomicBoolean Succeed = new AtomicBoolean(false);
 
     protected static class DeviceTwinStatusCallBack implements IotHubEventCallback
     {
         @Override
         public void execute(IotHubStatusCode status, Object context)
         {
-            if((status == IotHubStatusCode.OK) || (status == IotHubStatusCode.OK_EMPTY))
-            {
-                Succeed.set(true);
-            }
-            else
-            {
-                Succeed.set(false);
-            }
+            Succeed.set((status == IotHubStatusCode.OK) || (status == IotHubStatusCode.OK_EMPTY));
             System.out.println("IoT Hub responded to device twin operation with status " + status.name());
         }
     }
@@ -107,18 +100,18 @@ public class ModuleTwinSample
 
             if (status == IotHubConnectionStatus.DISCONNECTED)
             {
-                //connection was lost, and is not being re-established. Look at provided exception for
-                // how to resolve this issue. Cannot send messages until this issue is resolved, and you manually
-                // re-open the device client
+                System.out.println("The connection was lost, and is not being re-established." +
+                        " Look at provided exception for how to resolve this issue." +
+                        " Cannot send messages until this issue is resolved, and you manually re-open the device client");
             }
             else if (status == IotHubConnectionStatus.DISCONNECTED_RETRYING)
             {
-                //connection was lost, but is being re-established. Can still send messages, but they won't
-                // be sent until the connection is re-established
+                System.out.println("The connection was lost, but is being re-established." +
+                        " Can still send messages, but they won't be sent until the connection is re-established");
             }
             else if (status == IotHubConnectionStatus.CONNECTED)
             {
-                //Connection was successfully re-established. Can send messages.
+                System.out.println("The connection was successfully established. Can send messages.");
             }
         }
     }

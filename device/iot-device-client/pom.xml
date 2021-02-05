@@ -6,7 +6,6 @@
         <version>1.18.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.microsoft.azure.sdk.iot</groupId>
     <artifactId>${iot-device-client-artifact-id}</artifactId>
     <name>IoT Hub Java Device Client</name>
     <version>${iot-device-client-version}</version>
@@ -61,6 +60,12 @@
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-storage</artifactId>
             <version>8.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.eclipse.paho</groupId>
@@ -98,15 +103,11 @@
             <version>2.8.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.10</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.25</version>
         </dependency>
+
     </dependencies>
     <build>
         <plugins>

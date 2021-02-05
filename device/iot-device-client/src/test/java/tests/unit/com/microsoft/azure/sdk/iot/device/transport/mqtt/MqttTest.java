@@ -34,6 +34,7 @@ import static org.junit.Assert.*;
  * Unit test for Mqtt class.
  * 100% methods, 92% lines covered
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class MqttTest
 {
     private static final String expectedInputName = "someInputName";
@@ -101,11 +102,6 @@ public class MqttTest
         {
             new MockUp<MqttMessaging>()
             {
-                @Mock
-                void $clinit()
-                {
-                    // Do nothing here (usually).
-                }
 
                 @Mock
                 Pair<String, byte[]> peekMessage() throws IOException
@@ -119,11 +115,6 @@ public class MqttTest
         {
             new MockUp<MqttDeviceTwin>()
             {
-                @Mock
-                void $clinit()
-                {
-                    // Do nothing here (usually).
-                }
 
                 @Mock
                 Pair<String, byte[]> peekMessage() throws IOException
@@ -131,7 +122,7 @@ public class MqttTest
                     return new MutablePair<>(MOCK_PARSE_TOPIC, new byte[0]);
                 }
             };
-            return new MqttDeviceTwin(mockedMqttConnection, "", new HashMap<Integer, Message>());
+            return new MqttDeviceTwin(mockedMqttConnection, "", new HashMap<Integer, Message>(), null);
         }
     }
 
@@ -305,9 +296,8 @@ public class MqttTest
     @Test(expected = IllegalArgumentException.class)
     public void constructorThrowsExceptionIfConnectionIsNotInitialised() throws TransportException
     {
-        Mqtt mockMqtt = null;
         //act
-        mockMqtt = new MqttMessaging(null, CLIENT_ID, mockedIotHubListener, null, "", "", false, new HashMap<Integer, Message>());
+        new MqttMessaging(null, CLIENT_ID, mockedIotHubListener, null, "", "", false, new HashMap<Integer, Message>());
     }
 
     /*
@@ -903,7 +893,7 @@ public class MqttTest
 
         //assert
         byte[] actualPayload = receivedMessage.getBytes();
-        assertTrue(actualPayload.length == payload.length);
+       assertEquals(actualPayload.length, payload.length);
         for (int i = 0; i < payload.length; i++)
         {
             assertEquals(actualPayload[i], payload[i]);
@@ -1038,7 +1028,7 @@ public class MqttTest
     public void messageArrivedAddsToQueue() throws TransportException, MqttException
     {
         //arrange
-        Mqtt mockMqtt = null;
+        Mqtt mockMqtt;
         final byte[] actualPayload = {0x61, 0x62, 0x63};
         baseConstructorExpectations();
         baseConnectExpectation();
@@ -1061,10 +1051,10 @@ public class MqttTest
         Queue<Pair<String, byte[]>> actualQueue = Deencapsulation.getField(mockMqtt, "allReceivedMessages");
         Pair<String, byte[]> messagePair = actualQueue.poll();
         assertNotNull(messagePair);
-        assertTrue(messagePair.getKey().equals(MOCK_PARSE_TOPIC));
+        assertEquals(messagePair.getKey(), MOCK_PARSE_TOPIC);
 
         byte[] receivedPayload = messagePair.getValue();
-        assertTrue(actualPayload.length == receivedPayload.length);
+        assertEquals(actualPayload.length, receivedPayload.length);
         for (int i = 0; i < actualPayload.length; i++)
         {
             assertEquals(actualPayload[i], receivedPayload[i]);
@@ -1084,7 +1074,7 @@ public class MqttTest
     public void connectionLostAttemptsToReconnectWithSASTokenStillValid(final @Mocked ReconnectionNotifier reconnectionTask, final @Mocked TransportException mockedTransportException) throws IOException, MqttException
     {
         //arrange
-        Mqtt mockMqtt = null;
+        Mqtt mockMqtt;
         final Throwable t = new Throwable();
         baseConstructorExpectations();
 
@@ -1243,7 +1233,7 @@ public class MqttTest
 
         //assert
         byte[] actualPayload = receivedMessage.getBytes();
-        assertTrue(actualPayload.length == payload.length);
+        assertEquals(actualPayload.length, payload.length);
         for (int i = 0; i < payload.length; i++)
         {
             assertEquals(actualPayload[i], payload[i]);
@@ -1298,7 +1288,7 @@ public class MqttTest
 
         //assert
         byte[] actualPayload = receivedMessage.getBytes();
-        assertTrue(actualPayload.length == payload.length);
+        assertEquals(actualPayload.length, payload.length);
         for (int i = 0; i < payload.length; i++)
         {
             assertEquals(actualPayload[i], payload[i]);
@@ -1336,7 +1326,7 @@ public class MqttTest
 
     //Tests_SRS_Mqtt_34_042: [If this object has a saved listener, that listener shall be notified of the successfully delivered message.]
     @Test
-    public void deliveryCompleteNotifiesListener() throws TransportException
+    public void deliveryCompleteNotifiesListener(@Mocked final org.slf4j.Logger mockLogger) throws TransportException
     {
         //arrange
         final int expectedMessageId = 13;
@@ -1348,7 +1338,10 @@ public class MqttTest
         unacknowledgedMessages.put(12, otherMessage);
         unacknowledgedMessages.put(expectedMessageId, expectedMessage);
         Deencapsulation.setField(mockMqtt, "unacknowledgedSentMessages", unacknowledgedMessages);
-        new NonStrictExpectations()
+        final String deviceId = "someDeviceId";
+        Deencapsulation.setField(mockMqtt, "deviceId", deviceId);
+        Deencapsulation.setField(mockMqtt, "log", mockLogger);
+        new Expectations()
         {
             {
                 mockMqttDeliveryToken.getMessageId();
@@ -1364,9 +1357,9 @@ public class MqttTest
         new Verifications()
         {
             {
-                mockedIotHubListener.onMessageSent(expectedMessage, null);
+                mockedIotHubListener.onMessageSent(expectedMessage, deviceId, null);
                 times = 1;
-                mockedIotHubListener.onMessageSent(otherMessage, null);
+                mockedIotHubListener.onMessageSent(otherMessage, deviceId, null);
                 times = 0;
             }
         };
@@ -1405,7 +1398,7 @@ public class MqttTest
         new Verifications()
         {
             {
-                mockedIotHubListener.onMessageSent(expectedMessage, null);
+                mockedIotHubListener.onMessageSent(expectedMessage, null, null);
                 times = 0;
             }
         };
@@ -1444,7 +1437,7 @@ public class MqttTest
         new Verifications()
         {
             {
-                mockedIotHubListener.onMessageSent(expectedMessage, null);
+                mockedIotHubListener.onMessageSent(expectedMessage, null, null);
                 times = 0;
             }
         };
@@ -1483,7 +1476,7 @@ public class MqttTest
         new Verifications()
         {
             {
-                mockedIotHubListener.onMessageSent(expectedMessage, null);
+                mockedIotHubListener.onMessageSent(expectedMessage, null, null);
                 times = 0;
             }
         };

@@ -11,8 +11,6 @@ import com.microsoft.azure.sdk.iot.service.RegistryManager;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,19 +81,14 @@ public class ConfigurationManangerSample
             List<Configuration> configList = registryManager.getConfigurations(20);
             System.out.println(configList.size() + " Configurations found");
 
-            for (int i = 0; i < configList.size(); i++)
+            for (Configuration config : configList)
             {
-                Configuration config = configList.get(i);
                 System.out.println("Configuration Id: " + config.getId());
             }
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
     }
 
@@ -109,8 +102,8 @@ public class ConfigurationManangerSample
         Configuration config = new Configuration(SampleUtils.configurationId);
         config.setContent(content);
         config.getMetrics().setQueries(new HashMap<String, String>(){{put("waterSettingsPending",
-                "SELECT deviceId FROM devices WHERE properties.reported.chillerWaterSettings.status=\'pending\'");}});
-        config.setTargetCondition("properties.reported.chillerProperties.model=\'4000x\'");
+                "SELECT deviceId FROM devices WHERE properties.reported.chillerWaterSettings.status='pending'");}});
+        config.setTargetCondition("properties.reported.chillerProperties.model='4000x'");
         config.setPriority(20);
 
         try
@@ -119,13 +112,9 @@ public class ConfigurationManangerSample
             System.out.println("Add configuration " + config.getId() + " succeeded.");
             printConfiguration(config);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -141,13 +130,9 @@ public class ConfigurationManangerSample
             returnConfig = registryManager.getConfiguration(SampleUtils.configurationId);
             printConfiguration(returnConfig);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -165,13 +150,9 @@ public class ConfigurationManangerSample
             config = registryManager.updateConfiguration(config);
             printConfiguration(config);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -186,13 +167,9 @@ public class ConfigurationManangerSample
             registryManager.removeConfiguration(SampleUtils.configurationId);
             System.out.println("Device removed: " + SampleUtils.configurationId);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -209,7 +186,7 @@ public class ConfigurationManangerSample
         {
             for (Map.Entry<String, String> entry : queries.entrySet())
             {
-                String key = entry.getKey().toString();
+                String key = entry.getKey();
                 String val = entry.getValue();
                 System.out.println("    " + key + " : " + val);
             }
@@ -221,7 +198,7 @@ public class ConfigurationManangerSample
         {
             for (Map.Entry<String, Long> entry : results.entrySet())
             {
-                String key = entry.getKey().toString();
+                String key = entry.getKey();
                 Long val = entry.getValue();
                 System.out.println("    " + key + " : " + val);
             }
@@ -233,7 +210,7 @@ public class ConfigurationManangerSample
         {
             for (Map.Entry<String, String> entry : squeries.entrySet())
             {
-                String key = entry.getKey().toString();
+                String key = entry.getKey();
                 String val = entry.getValue();
                 System.out.println("    " + key + " : " + val);
             }
@@ -245,7 +222,7 @@ public class ConfigurationManangerSample
         {
             for (Map.Entry<String, Long> entry : sresults.entrySet())
             {
-                String key = entry.getKey().toString();
+                String key = entry.getKey();
                 Long val = entry.getValue();
                 System.out.println("    " + key + " : " + val);
             }

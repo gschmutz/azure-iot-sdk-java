@@ -6,7 +6,6 @@ package com.microsoft.azure.sdk.iot.device;
 import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadCompletionNotification;
 import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadSasUriRequest;
 import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadSasUriResponse;
-import com.microsoft.azure.sdk.iot.deps.serializer.ParserUtility;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.*;
 import com.microsoft.azure.sdk.iot.device.fileupload.FileUpload;
 import com.microsoft.azure.sdk.iot.device.fileupload.FileUploadTask;
@@ -85,6 +84,7 @@ public final class DeviceClient extends InternalClient implements Closeable
      * The number of milliseconds the transport will wait between
      * sending out messages.
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public static long SEND_PERIOD_MILLIS = 10L;
 
@@ -95,10 +95,13 @@ public final class DeviceClient extends InternalClient implements Closeable
      * The number of milliseconds the transport will wait between
      * polling for messages.
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public static long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public static long RECEIVE_PERIOD_MILLIS_MQTT = 10L;
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public static long RECEIVE_PERIOD_MILLIS_HTTPS = 25*60*1000; /*25 minutes*/
 
@@ -110,6 +113,9 @@ public final class DeviceClient extends InternalClient implements Closeable
 
     private FileUpload fileUpload;
     private FileUploadTask fileUploadTask;
+
+    private static final String MULTIPLEXING_CLOSE_ERROR_MESSAGE = "Cannot close a multiplexed client through this method. Must use multiplexingClient.unregisterDeviceClient(deviceClient)";
+    private static final String MULTIPLEXING_OPEN_ERROR_MESSAGE = "Cannot open a multiplexed client through this method. Must use multiplexingClient.registerDeviceClient(deviceClient)";
 
     /**
      * Constructor that takes a connection string and a transport client as an argument.
@@ -128,18 +134,19 @@ public final class DeviceClient extends InternalClient implements Closeable
      * RFC 3986 or if the provided {@code connString} is for an x509 authenticated device
      * @throws URISyntaxException if the hostname in the connection string is not a valid URI
      * @throws UnsupportedOperationException if the connection string belongs to a module rather than a device
+     * @deprecated {@link MultiplexingClient} should be used instead of {@link TransportClient} for creating all multiplexed connections.
      */
+    @Deprecated
     public DeviceClient(String connString, TransportClient transportClient) throws URISyntaxException, IllegalArgumentException, UnsupportedOperationException
     {
-        // Codes_SRS_DEVICECLIENT_12_009: [The constructor shall interpret the connection string as a set of key-value pairs delimited by ';', using the object IotHubConnectionString.]
-        this.config = new DeviceClientConfig(new IotHubConnectionString(connString));
-        this.deviceIO = null;
-
         // Codes_SRS_DEVICECLIENT_12_018: [If the transportClient is null, the function shall throw an IllegalArgumentException.]
         if (transportClient == null)
         {
             throw new IllegalArgumentException("Transport client cannot be null.");
         }
+        
+        this.config = new DeviceClientConfig(new IotHubConnectionString(connString));
+        this.deviceIO = null;
 
         // Codes_SRS_DEVICECLIENT_12_010: [The constructor shall set the connection type to USE_TRANSPORTCLIENT.]
         this.ioTHubConnectionType = IoTHubConnectionType.USE_TRANSPORTCLIENT;
@@ -204,6 +211,37 @@ public final class DeviceClient extends InternalClient implements Closeable
 
         commonConstructorVerifications();
 
+        commonConstructorSetup();
+    }
+
+    /**
+     * Constructor that allows for the client's SAS token generation to be controlled by the user. Note that options in
+     * this client such as setting the SAS token expiry time will throw {@link UnsupportedOperationException} since
+     * the SDK no longer controls that when this constructor is used.
+     * @param hostName The host name of the IoT Hub that this client will connect to.
+     * @param deviceId The Id of the device that the connection will identify as.
+     * @param sasTokenProvider The provider of all SAS tokens that are used during authentication.
+     * @param protocol The protocol that the client will connect over.
+     */
+    public DeviceClient(String hostName, String deviceId, SasTokenProvider sasTokenProvider, IotHubClientProtocol protocol)
+    {
+        this(hostName, deviceId, sasTokenProvider, protocol, null);
+    }
+
+    /**
+     * Constructor that allows for the client's SAS token generation to be controlled by the user. Note that options in
+     * this client such as setting the SAS token expiry time will throw {@link UnsupportedOperationException} since
+     * the SDK no longer controls that when this constructor is used.
+     * @param hostName The host name of the IoT Hub that this client will connect to.
+     * @param deviceId The Id of the device that the connection will identify as.
+     * @param sasTokenProvider The provider of all SAS tokens that are used during authentication.
+     * @param protocol The protocol that the client will connect over.
+     * @param clientOptions The options that allow configuration of the device client instance during initialization.
+     */
+    public DeviceClient(String hostName, String deviceId, SasTokenProvider sasTokenProvider, IotHubClientProtocol protocol, ClientOptions clientOptions)
+    {
+        super(hostName, deviceId, null, sasTokenProvider, protocol, clientOptions, SEND_PERIOD_MILLIS, getReceivePeriod(protocol));
+        commonConstructorVerifications();
         commonConstructorSetup();
     }
 
@@ -376,6 +414,11 @@ public final class DeviceClient extends InternalClient implements Closeable
      */
     public void open() throws IOException
     {
+        if (this.ioTHubConnectionType == IoTHubConnectionType.USE_MULTIPLEXING_CLIENT)
+        {
+            throw new UnsupportedOperationException(MULTIPLEXING_OPEN_ERROR_MESSAGE);
+        }
+
         if (this.ioTHubConnectionType == IoTHubConnectionType.USE_TRANSPORTCLIENT)
         {
             if (this.transportClient.getTransportClientState() == TransportClient.TransportClientState.CLOSED)
@@ -410,6 +453,11 @@ public final class DeviceClient extends InternalClient implements Closeable
     @Deprecated
     public void close() throws IOException
     {
+        if (this.ioTHubConnectionType == IoTHubConnectionType.USE_MULTIPLEXING_CLIENT)
+        {
+            throw new UnsupportedOperationException(MULTIPLEXING_CLOSE_ERROR_MESSAGE);
+        }
+
         if (this.ioTHubConnectionType == IoTHubConnectionType.USE_TRANSPORTCLIENT)
         {
             if (this.transportClient.getTransportClientState() == TransportClient.TransportClientState.OPENED)
@@ -446,6 +494,11 @@ public final class DeviceClient extends InternalClient implements Closeable
      */
     public void closeNow() throws IOException
     {
+        if (this.ioTHubConnectionType == IoTHubConnectionType.USE_MULTIPLEXING_CLIENT)
+        {
+            throw new UnsupportedOperationException(MULTIPLEXING_CLOSE_ERROR_MESSAGE);
+        }
+
         if (this.ioTHubConnectionType == IoTHubConnectionType.USE_TRANSPORTCLIENT)
         {
             if (this.transportClient.getTransportClientState() == TransportClient.TransportClientState.OPENED)
@@ -632,6 +685,37 @@ public final class DeviceClient extends InternalClient implements Closeable
     }
 
     /**
+     * Starts the device twin. This device client will receive a callback with the current state of the full twin, including
+     * reported properties and desired properties. After that callback is received, this device client will receive a callback
+     * each time a desired property is updated. That callback will either contain the full desired properties set, or
+     * only the updated desired property depending on how the desired property was changed. IoT Hub supports a PUT and a PATCH
+     * on the twin. The PUT will cause this device client to receive the full desired properties set, and the PATCH
+     * will cause this device client to only receive the updated desired properties. Similarly, the version
+     * of each desired property will be incremented from a PUT call, and only the actually updated desired property will
+     * have its version incremented from a PATCH call. The java service client library uses the PATCH call when updated desired properties,
+     * but it builds the patch such that all properties are included in the patch. As a result, the device side will receive full twin
+     * updates, not partial updates.
+     *
+     * See <a href="https://docs.microsoft.com/en-us/rest/api/iothub/service/twin/replacedevicetwin">PUT</a> and
+     * <a href="https://docs.microsoft.com/en-us/rest/api/iothub/service/twin/updatedevicetwin">PATCH</a>
+     *
+     * @param deviceTwinStatusCallback the IotHubEventCallback callback for providing the status of Device Twin operations. Cannot be {@code null}.
+     * @param deviceTwinStatusCallbackContext the context to be passed to the status callback. Can be {@code null}.
+     * @param genericPropertiesCallBack the TwinPropertyCallBack callback for providing any changes in desired properties. Cannot be {@code null}.
+     * @param genericPropertyCallBackContext the context to be passed to the property callback. Can be {@code null}.
+     *
+     * @throws IllegalArgumentException if the callback is {@code null}
+     * @throws UnsupportedOperationException if called more than once on the same device
+     * @throws IOException if called when client is not opened
+     */
+    public void startDeviceTwin(IotHubEventCallback deviceTwinStatusCallback, Object deviceTwinStatusCallbackContext,
+                                TwinPropertiesCallback genericPropertiesCallBack, Object genericPropertyCallBackContext)
+            throws IOException, IllegalArgumentException, UnsupportedOperationException
+    {
+        this.startTwinInternal(deviceTwinStatusCallback, deviceTwinStatusCallbackContext, genericPropertiesCallBack, genericPropertyCallBackContext);
+    }
+
+    /**
      * Registers a callback to be executed whenever the connection to the device is lost or established.
      * @deprecated as of release 1.10.0 by {@link #registerConnectionStatusChangeCallback(IotHubConnectionStatusChangeCallback callback, Object callbackContext)}
      * @param callback the callback to be called.
@@ -668,6 +752,13 @@ public final class DeviceClient extends InternalClient implements Closeable
         this.subscribeToMethodsInternal(deviceMethodCallback, deviceMethodCallbackContext, deviceMethodStatusCallback, deviceMethodStatusCallbackContext);
     }
 
+    // Used by multiplexing clients to signal to this client what kind of multiplexing client is using this device client
+    @SuppressWarnings("SameParameterValue") // The connection type is currently only set to "multiplexing client", but it can be set to the deprecated transport client as well.
+    void setConnectionType(IoTHubConnectionType connectionType)
+    {
+        this.ioTHubConnectionType = connectionType;
+    }
+
     /**
      * Sets a runtime option identified by parameter {@code optionName}
      * to {@code value}.
@@ -685,7 +776,7 @@ public final class DeviceClient extends InternalClient implements Closeable
      *
      *	    - <b>SetReceiveInterval</b> - this option is applicable to all protocols
      *	      in case of HTTPS protocol, this option acts the same as {@code SetMinimumPollingInterval}
-     *	      in case of MQTT and AMQP protocols, this option specifies the interval in millisecods
+     *	      in case of MQTT and AMQP protocols, this option specifies the interval in milliseconds
      *	      between spawning a thread that dequeues a message from the SDK's queue of received messages.
      *
      *	    - <b>SetCertificatePath</b> - this option is applicable only
@@ -736,6 +827,12 @@ public final class DeviceClient extends InternalClient implements Closeable
         {
             // Codes_SRS_DEVICECLIENT_12_026: [The function shall trow IllegalArgumentException if the value is null.]
             throw new IllegalArgumentException("value is null");
+        }
+
+        // deviceIO is only ever null when a client was registered to a multiplexing client, became unregistered, and hasn't be re-registered yet.
+        if (this.deviceIO == null)
+        {
+            throw new UnsupportedOperationException("Must re-register this client to a multiplexing client before using it");
         }
 
         switch (optionName)
@@ -824,6 +921,9 @@ public final class DeviceClient extends InternalClient implements Closeable
         super.setOption(optionName, value);
     }
 
+    // The warning is for how getSasTokenAuthentication() may return null, but the check that our config uses SAS_TOKEN
+    // auth is sufficient at confirming that getSasTokenAuthentication() will return a non-null instance
+    @SuppressWarnings("ConstantConditions")
     @Override
     void setOption_SetSASTokenExpiryTime(Object value) throws IllegalArgumentException
     {

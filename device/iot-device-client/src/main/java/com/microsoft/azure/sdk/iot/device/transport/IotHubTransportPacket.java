@@ -4,7 +4,6 @@
 package com.microsoft.azure.sdk.iot.device.transport;
 
 import com.microsoft.azure.sdk.iot.device.IotHubEventCallback;
-import com.microsoft.azure.sdk.iot.device.IotHubResponseCallback;
 import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
 import com.microsoft.azure.sdk.iot.device.Message;
 
@@ -14,12 +13,13 @@ import com.microsoft.azure.sdk.iot.device.Message;
  */
 public final class IotHubTransportPacket
 {
-    private Message message;
-    private IotHubEventCallback eventCallback;
-    private Object callbackContext;
+    private final Message message;
+    private final IotHubEventCallback eventCallback;
+    private final Object callbackContext;
     private IotHubStatusCode status;
     private final long startTimeMillis;
     private int currentRetryAttempt;
+    private final String deviceId;
 
     /**
      * Constructor.
@@ -36,7 +36,8 @@ public final class IotHubTransportPacket
                                  IotHubEventCallback eventCallback,
                                  Object callbackContext,
                                  IotHubStatusCode status,
-                                 long startTimeMillis) throws IllegalArgumentException
+                                 long startTimeMillis,
+                                 String deviceId) throws IllegalArgumentException
     {
         if (startTimeMillis < 1)
         {
@@ -56,6 +57,7 @@ public final class IotHubTransportPacket
         this.callbackContext = callbackContext;
         this.status = status;
         this.startTimeMillis = startTimeMillis;
+        this.deviceId = deviceId;
     }
 
     /**
@@ -138,5 +140,13 @@ public final class IotHubTransportPacket
     {
         // Codes_SRS_IOTHUBTRANSPORTPACKET_34_009: [This function shall increment the saved retry attempt count by 1.]
         this.currentRetryAttempt++;
+    }
+
+    /**
+     * Get the Id of the device that this packet is being sent from.
+     * @return The Id of the device that this packet is being sent from.
+     */
+    public String getDeviceId() {
+        return deviceId;
     }
 }

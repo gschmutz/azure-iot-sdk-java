@@ -5,7 +5,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.deps.serializer;
 
 import com.google.gson.JsonElement;
 import com.microsoft.azure.sdk.iot.deps.serializer.ParserUtility;
-import com.microsoft.azure.sdk.iot.deps.twin.TwinMetadata;
 import mockit.Deencapsulation;
 import org.junit.Test;
 import tests.unit.com.microsoft.azure.sdk.iot.deps.Helpers;
@@ -304,7 +303,7 @@ public class ParserUtilityTest
         final class localClass
         {
             int a;
-        };
+        }
         final Map<String, Object> mapSample = new HashMap<String, Object>()
         {
             {

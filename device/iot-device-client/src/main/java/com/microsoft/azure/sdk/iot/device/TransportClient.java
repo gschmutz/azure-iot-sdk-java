@@ -1,10 +1,14 @@
 package com.microsoft.azure.sdk.iot.device;
 
+import com.microsoft.azure.sdk.iot.device.exceptions.MultiplexingClientException;
 import com.microsoft.azure.sdk.iot.device.transport.RetryPolicy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+
+import static com.microsoft.azure.sdk.iot.device.MultiplexingClient.DEFAULT_REGISTRATION_TIMEOUT_MILLISECONDS;
 
 /**
  * <p>
@@ -15,8 +19,14 @@ import java.util.ArrayList;
  * the connection. 
  * </p>
  * The multiplexed connection is supported with AMQPS / AMQPS_WS protocols.
+ *
+ * @deprecated This client has been replaced with {@link MultiplexingClient} since this client does not support adding
+ * or removing devices once the connection has been established. {@link MultiplexingClient} allows for adding and removing
+ * of devices from multiplexed connections before or after opening the connection.
  */
+@SuppressWarnings("DeprecatedIsStillUsed")
 @Slf4j
+@Deprecated
 public class TransportClient
 {
     public enum TransportClientState
@@ -28,11 +38,11 @@ public class TransportClient
     public static long SEND_PERIOD_MILLIS = 10L;
     public static long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
 
-    private IotHubClientProtocol iotHubClientProtocol;
+    private final IotHubClientProtocol iotHubClientProtocol;
     private DeviceIO deviceIO;
     private TransportClientState transportClientState;
 
-    private ArrayList<DeviceClient> deviceClientList;
+    private final ArrayList<DeviceClient> deviceClientList;
 
     /**
      * Constructor that takes a protocol as an argument.
@@ -94,11 +104,25 @@ public class TransportClient
             deviceClientList.get(0).setDeviceIO(this.deviceIO);
 
             // Codes_SRS_TRANSPORTCLIENT_12_012: [The function shall set the created DeviceIO to all registered device client.]
+            List<DeviceClientConfig> configList = new ArrayList<>();
             for (int i = 1; i < this.deviceClientList.size(); i++)
             {
                 deviceClientList.get(i).setDeviceIO(this.deviceIO);
                 //propagate this client config to amqp connection
-                this.deviceIO.addClient(deviceClientList.get(i).getConfig());
+                configList.add(deviceClientList.get(i).getConfig());
+            }
+
+            try
+            {
+                this.deviceIO.registerMultiplexedDeviceClient(configList, DEFAULT_REGISTRATION_TIMEOUT_MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                throw new IOException("Interrupted while registering device clients to the multiplexed connection", e);
+            }
+            catch (MultiplexingClientException e)
+            {
+                throw new IOException("Failed to register one or more device clients to the multiplexed connection", e);
             }
 
             // Codes_SRS_TRANSPORTCLIENT_12_013: [The function shall open the transport in multiplexing mode.]
@@ -123,15 +147,15 @@ public class TransportClient
     public void closeNow() throws IOException
     {
         // Codes_SRS_TRANSPORTCLIENT_12_015: [If the registered device list is not empty the function shall call closeFileUpload on all devices.]
-        for (int i = 0; i < this.deviceClientList.size(); i++)
+        for (DeviceClient deviceClient : this.deviceClientList)
         {
-            deviceClientList.get(i).closeFileUpload();
+            deviceClient.closeFileUpload();
         }
 
-        // Codes_SRS_TRANSPORTCLIENT_12_014: [If the deviceIO not null the function shall call multiplexClose on the deviceIO and set the deviceIO to null.]
+        // Codes_SRS_TRANSPORTCLIENT_12_014: [If the deviceIO not null the function shall call closeWithoutWrappingException on the deviceIO and set the deviceIO to null.]
         if (this.deviceIO != null)
         {
-            this.deviceIO.multiplexClose();
+            this.deviceIO.close();
             this.deviceIO = null;
         }
 
@@ -180,10 +204,10 @@ public class TransportClient
             throw new UnsupportedOperationException("TransportClient.setRetryPolicy only works when there is at least one registered device client.");
         }
 
-        for (int i = 0; i < this.deviceClientList.size(); i++)
+        for (DeviceClient deviceClient : this.deviceClientList)
         {
             // Codes_SRS_TRANSPORTCLIENT_28_002: [The function shall set the retry policies to all registered device clients.]
-            deviceClientList.get(i).getConfig().setRetryPolicy(retryPolicy);
+            deviceClient.getConfig().setRetryPolicy(retryPolicy);
         }
 
         log.debug("Retry policy updated successfully in the transport client");

@@ -10,11 +10,9 @@ import com.microsoft.azure.sdk.iot.device.DeviceClient;
 import com.microsoft.azure.sdk.iot.device.IotHubClientProtocol;
 import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
 import com.microsoft.azure.sdk.iot.device.Message;
-import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.service.Device;
 import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,6 +63,14 @@ public class SendMessagesTests extends SendMessagesCommon
     public void sendMessages() throws Exception
     {
         this.testInstance.setup();
+
+        IotHubServicesCommon.sendMessages(testInstance.client, testInstance.protocol, NORMAL_MESSAGES_TO_SEND, RETRY_MILLISECONDS, SEND_TIMEOUT_MILLISECONDS, 0, null);
+    }
+
+    @Test
+    public void sendMessagesWithCustomSasTokenProvider() throws Exception
+    {
+        this.testInstance.setup(true);
 
         IotHubServicesCommon.sendMessages(testInstance.client, testInstance.protocol, NORMAL_MESSAGES_TO_SEND, RETRY_MILLISECONDS, SEND_TIMEOUT_MILLISECONDS, 0, null);
     }

@@ -3,22 +3,18 @@
 
 package tests.integration.com.microsoft.azure.sdk.iot.digitaltwin;
 
-import com.google.gson.annotations.SerializedName;
 import com.microsoft.azure.sdk.iot.device.*;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.*;
 import com.microsoft.azure.sdk.iot.service.Device;
 import com.microsoft.azure.sdk.iot.service.RegistryManager;
-import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;;
+import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.DigitalTwinClient;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.UpdateOperationUtility;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.customized.DigitalTwinGetHeaders;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.models.*;
 import com.microsoft.azure.sdk.iot.service.digitaltwin.serialization.BasicDigitalTwin;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
-import com.microsoft.rest.RestException;
 import com.microsoft.rest.ServiceResponseWithHeaders;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.*;
 import org.junit.rules.Timeout;
@@ -26,7 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import tests.integration.com.microsoft.azure.sdk.iot.digitaltwin.helpers.E2ETestConstants;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.IntegrationTest;
-import tests.integration.com.microsoft.azure.sdk.iot.helpers.TestConstants;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.Tools;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.annotations.DigitalTwinTest;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.annotations.StandardTierHubOnlyTest;
@@ -41,8 +36,8 @@ import java.util.*;
 
 import static com.microsoft.azure.sdk.iot.device.IotHubClientProtocol.MQTT;
 import static com.microsoft.azure.sdk.iot.device.IotHubClientProtocol.MQTT_WS;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @DigitalTwinTest
 @Slf4j
@@ -59,17 +54,15 @@ public class DigitalTwinClientTests extends IntegrationTest
     @Rule
     public Timeout globalTimeout = Timeout.seconds(5 * 60); // 5 minutes max per method tested
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter()
     public IotHubClientProtocol protocol;
 
     @Parameterized.Parameters(name = "{index}: Digital Twin Test: protocol={0}")
     public static Collection<Object[]> data() {
-        List inputs = new ArrayList();
-            inputs.addAll(Arrays.asList(new Object[][]{
-                    {MQTT},
-                    {MQTT_WS},
-            }));
-        return inputs;
+        return (List) new ArrayList(Arrays.asList(new Object[][]{
+                {MQTT},
+                {MQTT_WS},
+        }));
     }
 
     @BeforeClass
@@ -136,8 +129,6 @@ public class DigitalTwinClientTests extends IntegrationTest
             Set<Property> properties = new HashSet<>();
             properties.add(property);
             try {
-                //EmbeddedPropertyUpdate completedUpdate = new EmbeddedPropertyUpdate(property.getValue(), 200, property.getVersion(), "Successfully updated target temperature");
-                //Property reportedPropertyCompleted = new Property(property.getKey(), completedUpdate);
                 deviceClient.sendReportedProperties(properties);
             } catch (IOException e) {
             }
@@ -170,7 +161,7 @@ public class DigitalTwinClientTests extends IntegrationTest
 
         // assert
         assertEquals(E2ETestConstants.THERMOSTAT_MODEL_ID, digitalTwin.getMetadata().getModelId());
-        assertEquals(true, digitalTwin.getMetadata().getWriteableProperties().containsKey(newProperty));
+        assertTrue(digitalTwin.getMetadata().getWriteableProperties().containsKey(newProperty));
         assertEquals(newPropertyValue, digitalTwin.getMetadata().getWriteableProperties().get(newProperty).getDesiredValue());
     }
 

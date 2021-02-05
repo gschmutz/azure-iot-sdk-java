@@ -27,8 +27,7 @@ import java.security.cert.CertificateException;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /*
      Unit tests for SecurityProviderTpm and SecurityProvider
@@ -62,9 +61,11 @@ public class SecurityProviderTpmTest
     @Mocked
     UUID mockedUUID;
 
-    class SecurityProviderTPMTestImpl extends SecurityProviderTpm
+    static class SecurityProviderTPMTestImpl extends SecurityProviderTpm
     {
         byte[] ek;
+
+        @SuppressWarnings("SameParameterValue") // Since this is a constructor "ek" can be passed any value.
         SecurityProviderTPMTestImpl(byte[] ek)
         {
             this.ek = ek;
@@ -94,17 +95,6 @@ public class SecurityProviderTpmTest
             return TEST_SIGN_DATA;
         }
 
-        @Override
-        public String getRegistrationId() throws SecurityProviderException
-        {
-            return super.getRegistrationId();
-        }
-
-        @Override
-        public SSLContext getSSLContext() throws SecurityProviderException
-        {
-            return super.getSSLContext();
-        }
     }
 
     //SRS_SecurityClientTpm_25_001: [ This method shall retrieve the EnrollmentKey from the implementation of this abstract class. ]
@@ -119,7 +109,7 @@ public class SecurityProviderTpmTest
         String actualRegistrationId = securityClientTpm.getRegistrationId();
         //assert
         assertNotNull(actualRegistrationId);
-        assertTrue(actualRegistrationId.equals(actualRegistrationId.toLowerCase()));
+        assertEquals(actualRegistrationId, actualRegistrationId.toLowerCase());
         assertFalse(actualRegistrationId.contains("="));
         new Verifications()
         {

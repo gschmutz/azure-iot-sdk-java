@@ -11,6 +11,7 @@ import com.microsoft.azure.sdk.iot.service.transport.amqps.AmqpSend;
 import mockit.*;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
@@ -107,7 +108,7 @@ public class ServiceClientTest
         {
             {
                 iotHubServiceSasToken = new IotHubServiceSasToken(withNotNull());
-                amqpSend = new AmqpSend(anyString, anyString, anyString, iotHubServiceClientProtocol, (ProxyOptions) any);
+                amqpSend = new AmqpSend(anyString, anyString, anyString, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
             }
         };
         // Act
@@ -522,7 +523,7 @@ public class ServiceClientTest
         new Expectations()
         {
             {
-                feedbackReceiver = new FeedbackReceiver(anyString, anyString, anyString, iotHubServiceClientProtocol, (ProxyOptions) any);
+                feedbackReceiver = new FeedbackReceiver(anyString, anyString, anyString, iotHubServiceClientProtocol, (ProxyOptions) any, (SSLContext) any);
             }
         };
         // Act

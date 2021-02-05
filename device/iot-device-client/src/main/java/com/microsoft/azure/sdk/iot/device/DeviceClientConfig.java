@@ -31,7 +31,10 @@ public final class DeviceClientConfig
     private static final int DEFAULT_HTTPS_READ_TIMEOUT_MILLIS = 240000;
     private static final int DEFAULT_HTTPS_CONNECT_TIMEOUT_MILLIS = 0; //no connect timeout
 
-    private static final int DEFAULT_AMQP_OPEN_AUTHENTICATION_SESSION_TIMEOUT_IN_SECONDS = 20;
+    // authentication session timeout is public because a multiplexed connection needs this default if no devices
+    // were registered prior to opening the connection. No device sessions would be opened in that case though, so
+    // the default device session timeout can stay private.
+    public static final int DEFAULT_AMQP_OPEN_AUTHENTICATION_SESSION_TIMEOUT_IN_SECONDS = 20;
     private static final int DEFAULT_AMQP_OPEN_DEVICE_SESSIONS_TIMEOUT_IN_SECONDS = 60;
 
     /** The default value for messageLockTimeoutSecs. */
@@ -86,7 +89,7 @@ public final class DeviceClientConfig
     /** The context to be passed in to the message callback. */
     private Object defaultDeviceTelemetryMessageContext;
 
-    private Map<String, Pair<MessageCallback, Object>> inputChannelMessageCallbacks = new HashMap<>();
+    private final Map<String, Pair<MessageCallback, Object>> inputChannelMessageCallbacks = new HashMap<>();
 
     private ProductInfo productInfo;
 
@@ -142,6 +145,19 @@ public final class DeviceClientConfig
         this.authenticationProvider = authenticationProvider;
         this.useWebsocket = false;
         this.productInfo = new ProductInfo();
+    }
+
+
+    public DeviceClientConfig(String hostName, SasTokenProvider sasTokenProvider, ClientOptions clientOptions, String deviceId, String moduleId)
+    {
+        SSLContext sslContext = clientOptions != null ? clientOptions.sslContext : null;
+        this.authenticationProvider =
+                new IotHubSasTokenProvidedAuthenticationProvider(hostName, deviceId, moduleId, sasTokenProvider, sslContext);
+
+        this.useWebsocket = false;
+        this.productInfo = new ProductInfo();
+
+        log.debug("Device configured to use SAS token provided authentication provider");
     }
 
     /**

@@ -13,9 +13,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for IotHubCertificateManager
@@ -23,6 +21,8 @@ import static org.junit.Assert.assertTrue;
  * Methods: 100%
  * Lines: 100%
  */
+// Unsure if this is somehthing needed to run locally. Leaving for now.
+@SuppressWarnings("CommentedOutCode")
 public class IotHubCertificateManagerTests
 {
 /*
@@ -71,7 +71,7 @@ public class IotHubCertificateManagerTests
         }
     }
 */
-    private String someSingleValidCertificate =
+    private final String someSingleValidCertificate =
             "-----BEGIN CERTIFICATE-----\r\n" +
                     "MIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ\r\n" +
                     "RTESMBAGA1UEChMJQmFsdGltb3JlMRMwEQYDVQQLEwpDeWJlclRydXN0MSIwIAYD\r\n" +
@@ -94,7 +94,7 @@ public class IotHubCertificateManagerTests
                     "R9I4LtD+gdwyah617jzV/OeBHRnDJELqYzmp\r\n" +
                     "-----END CERTIFICATE-----\r\n";
 
-    private String someValidCertificates =
+    private final String someValidCertificates =
             "-----BEGIN CERTIFICATE-----\r\n" +
                     "MIIEMzCCAxugAwIBAgIDCYPzMA0GCSqGSIb3DQEBCwUAME0xCzAJBgNVBAYTAkRF\r\n" +
                     "MRUwEwYDVQQKDAxELVRydXN0IEdtYkgxJzAlBgNVBAMMHkQtVFJVU1QgUm9vdCBD\r\n" +
@@ -205,7 +205,7 @@ public class IotHubCertificateManagerTests
             //assert
 
             Collection<? extends Certificate> certificates = Deencapsulation.getField(testCertManager, "certificates");
-            assertTrue(certificates.size() == 1);
+            assertEquals(1, certificates.size());
         }
         finally
         {
@@ -245,7 +245,7 @@ public class IotHubCertificateManagerTests
             //assert
 
             Collection<? extends Certificate> certificates = Deencapsulation.getField(testCertManager, "certificates");
-            assertTrue(certificates.size() == 2);
+            assertEquals(2, certificates.size());
         }
         finally
         {
@@ -269,7 +269,7 @@ public class IotHubCertificateManagerTests
 
         //assert
         Collection<? extends Certificate> certificates = Deencapsulation.getField(testCertManager, "certificates");
-        assertTrue(certificates.size() == 1);
+        assertEquals(1, certificates.size());
     }
 
     //Tests_SRS_IOTHUBCERTIFICATEMANAGER_34_005: [**This function shall read the certificates from the provided
@@ -285,7 +285,7 @@ public class IotHubCertificateManagerTests
 
         //assert
         Collection<? extends Certificate> certificates = Deencapsulation.getField(testCertManager, "certificates");
-        assertTrue(certificates.size() == 2);
+        assertEquals(2, certificates.size());
     }
 
     //Tests_SRS_IOTHUBCERTIFICATEMANAGER_34_006: [**This method shall throw IllegalArgumentException if parameter is null or empty.**]**

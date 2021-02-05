@@ -23,14 +23,14 @@ public class ServiceClient
 {
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
-    private AmqpSend amqpMessageSender;
+    private final AmqpSend amqpMessageSender;
     private final String hostName;
     private final String userName;
     private final String sasToken;
     protected IotHubConnectionString iotHubConnectionString;
-    private IotHubServiceClientProtocol iotHubServiceClientProtocol;
+    private final IotHubServiceClientProtocol iotHubServiceClientProtocol;
 
-    private ServiceClientOptions options;
+    private final ServiceClientOptions options;
 
     /**
      * Create ServiceClient from the specified connection string
@@ -69,8 +69,7 @@ public class ServiceClient
         IotHubConnectionString iotHubConnectionString = IotHubConnectionStringBuilder.createConnectionString(connectionString);
 
         // Codes_SRS_SERVICE_SDK_JAVA_SERVICECLIENT_12_003: [The constructor shall create a new instance of ServiceClient using the created IotHubConnectionString object and return with it]
-        ServiceClient iotServiceClient = new ServiceClient(iotHubConnectionString, iotHubServiceClientProtocol, options);
-        return iotServiceClient;
+        return new ServiceClient(iotHubConnectionString, iotHubServiceClientProtocol, options);
     }
 
     /**
@@ -116,7 +115,7 @@ public class ServiceClient
         }
 
         // Codes_SRS_SERVICE_SDK_JAVA_SERVICECLIENT_12_007: [The constructor shall create a new instance of AmqpSend object]
-        this.amqpMessageSender = new AmqpSend(hostName, userName, sasToken, this.iotHubServiceClientProtocol, options.getProxyOptions());
+        this.amqpMessageSender = new AmqpSend(hostName, userName, sasToken, this.iotHubServiceClientProtocol, options.getProxyOptions(), options.getSslContext());
     }
 
     /**
@@ -275,8 +274,7 @@ public class ServiceClient
         }
 
         // Codes_SRS_SERVICE_SDK_JAVA_SERVICECLIENT_12_017: [The function shall create a FeedbackReceiver object and returns with it. This API is deprecated.]
-        FeedbackReceiver feedbackReceiver = new FeedbackReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, deviceId);
-        return feedbackReceiver;
+        return new FeedbackReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, deviceId);
     }
     
     /**
@@ -286,7 +284,7 @@ public class ServiceClient
      */
      public FeedbackReceiver getFeedbackReceiver()
      {
-        return new FeedbackReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, options.getProxyOptions());
+        return new FeedbackReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, options.getProxyOptions(), options.getSslContext());
      }
 
     /**
@@ -296,7 +294,7 @@ public class ServiceClient
      */
     public FileUploadNotificationReceiver getFileUploadNotificationReceiver()
     {
-        return new FileUploadNotificationReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, options.getProxyOptions());
+        return new FileUploadNotificationReceiver(hostName, userName, sasToken, iotHubServiceClientProtocol, options.getProxyOptions(), options.getSslContext());
     }
     
 }

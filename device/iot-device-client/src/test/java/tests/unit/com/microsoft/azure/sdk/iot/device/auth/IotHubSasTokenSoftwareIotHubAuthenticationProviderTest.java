@@ -7,8 +7,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.device.auth;
 
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
 import com.microsoft.azure.sdk.iot.device.auth.*;
-import com.microsoft.azure.sdk.iot.device.auth.IotHubSasTokenAuthenticationProvider;
-import com.microsoft.azure.sdk.iot.device.auth.IotHubSasTokenSoftwareAuthenticationProvider;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import mockit.*;
 import org.junit.Test;
@@ -31,14 +29,14 @@ import static org.junit.Assert.assertFalse;
  */
 public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
 {
-    private static String expectedDeviceId = "deviceId";
-    private static String expectedHostname = "hostname";
-    private static String expectedGatewayHostname = "gateway";
-    private static String expectedModuleId = "moduleId";
-    private static String expectedDeviceKey = "deviceKey";
-    private static String expectedSasToken = "sasToken";
-    private static long expectedExpiryTime = 3601;
-    private static long expectedBufferPercent = 20;
+    private static final String expectedDeviceId = "deviceId";
+    private static final String expectedHostname = "hostname";
+    private static final String expectedGatewayHostname = "gateway";
+    private static final String expectedModuleId = "moduleId";
+    private static final String expectedDeviceKey = "deviceKey";
+    private static final String expectedSasToken = "sasToken";
+    private static final long expectedExpiryTime = 3601;
+    private static final long expectedBufferPercent = 20;
 
     @Mocked IotHubSasToken mockSasToken;
     @Mocked IotHubSSLContext mockIotHubSSLContext;
@@ -155,8 +153,6 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
             {
                 System.currentTimeMillis();
                 result = 0;
-                Deencapsulation.invoke(mockSasToken, "isExpired");
-                result = true;
                 System.currentTimeMillis();
                 result = 0;
                 Deencapsulation.newInstance(IotHubSasToken.class, new Class[] {String.class, String.class, String.class, String.class, String.class, long.class}, expectedHostname, expectedDeviceId, expectedDeviceKey, null, expectedModuleId, expectedExpiryTime);
@@ -168,7 +164,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        sasAuth.getRenewedSasToken(false, false);
+        sasAuth.getSasToken();
 
     }
 
@@ -201,7 +197,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        sasAuth.getRenewedSasToken(true, false);
+        sasAuth.getSasToken();
     }
 
     @Test
@@ -232,7 +228,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        sasAuth.getRenewedSasToken(true, true);
+        sasAuth.getSasToken();
     }
 
     //Tests_SRS_IOTHUBSASTOKENAUTHENTICATION_34_006: [If the saved sas token has not expired and there is a device key present, but this method is called to proactively renew and the token should renew, the saved sas token shall be renewed.]
@@ -262,13 +258,12 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        sasAuth.getRenewedSasToken(true, false);
+        sasAuth.getSasToken();
     }
 
     //Tests_SRS_IOTHUBSASTOKENSOFTWAREAUTHENTICATION_34_005: [This function shall return the saved sas token.]
     @Test
-    public void getSasTokenReturnsSavedValue() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException
-    {
+    public void getSasTokenReturnsSavedValue() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException, TransportException {
         //arrange
         new Expectations()
         {
@@ -277,18 +272,16 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
                 result = mockSasToken;
                 mockSasToken.toString();
                 result = "some token";
-                Deencapsulation.invoke(mockSasToken, "isExpired");
-                result = false;
             }
         };
 
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        String actualSasToken = Deencapsulation.invoke(sasAuth, "getRenewedSasToken", false, false);
+        char[] actualSasToken = sasAuth.getSasToken();
 
         //assert
-        assertEquals(mockSasToken.toString(), actualSasToken);
+        assertEquals(mockSasToken.toString(), String.valueOf(actualSasToken));
     }
 
     //Tests_SRS_IOTHUBSASTOKENAUTHENTICATION_34_017: [If the saved sas token has expired and cannot be renewed, this function shall return true.]
@@ -307,7 +300,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, null, expectedSasToken);
 
         //act
-        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isRenewalNecessary");
+        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isAuthenticationProviderRenewalNecessary");
 
         //assert
         assertTrue(needsToRenew);
@@ -331,7 +324,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isRenewalNecessary");
+        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isAuthenticationProviderRenewalNecessary");
 
         //assert
         assertFalse(needsToRenew);
@@ -353,13 +346,13 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isRenewalNecessary");
+        boolean needsToRenew = Deencapsulation.invoke(sasAuth, "isAuthenticationProviderRenewalNecessary");
 
         //assert
         assertFalse(needsToRenew);
     }
 
-    // Tests_SRS_IOTHUBSASTOKENSOFTWAREAUTHENTICATION_34_018: [This function shall return true if a deviceKey is present and if super.isRenewalNecessary returns true.]
+    // Tests_SRS_IOTHUBSASTOKENSOFTWAREAUTHENTICATION_34_018: [This function shall return true if a deviceKey is present and if super.isAuthenticationProviderRenewalNecessary returns true.]
     @Test
     public void isRenewalNecessaryReturnsTrueIfDeviceKeyPresent()
     {
@@ -367,7 +360,7 @@ public class IotHubSasTokenSoftwareIotHubAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenSoftwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, expectedDeviceKey, expectedSasToken);
 
         //act
-        boolean result = sasAuth.isRenewalNecessary();
+        boolean result = sasAuth.isAuthenticationProviderRenewalNecessary();
 
         //assert
         assertFalse(result);

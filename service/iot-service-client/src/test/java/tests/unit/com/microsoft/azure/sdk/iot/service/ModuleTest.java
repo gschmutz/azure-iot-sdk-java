@@ -13,8 +13,6 @@ import com.microsoft.azure.sdk.iot.service.auth.SymmetricKey;
 import mockit.*;
 import org.junit.Test;
 
-import java.security.NoSuchAlgorithmException;
-
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
@@ -27,7 +25,7 @@ public class ModuleTest
     // generationId, Etag, ConnectionState, ConnectionStateUpdatedTime, LastActivityTime, cloudToDeviceMessageCount,
     // authentication, managedBy.]
     // Assert
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void module_get_all_properties()
     {
         // Arrange
@@ -60,9 +58,6 @@ public class ModuleTest
         module.getConnectionStateUpdatedTime();
         module.getLastActivityTime();
         module.getCloudToDeviceMessageCount();
-
-        module.setForceUpdate(true);
-        module.setForceUpdate(null);
     }
 
     // Tests_SRS_SERVICE_SDK_JAVA_MODULE_28_002: [The function shall throw IllegalArgumentException if the input string is empty or null]
@@ -290,7 +285,6 @@ public class ModuleTest
         // arrange
         String expectedDeviceId = "deviceCA";
         String expectedModuleId = "moduleCA";
-        boolean expectedForceUpdate = false;
         int expectedCloudToDeviceMessageCount = 23;
         DeviceConnectionState expectedConnectionState = DeviceConnectionState.Connected;
         String expectedConnectionStateUpdatedTime = "2001-09-09T09:09:09";
@@ -300,7 +294,6 @@ public class ModuleTest
         String expectedManagedBy = "jkik";
 
         Module module = Module.createModule(expectedDeviceId, expectedModuleId, AuthenticationType.SAS);
-        module.setForceUpdate(expectedForceUpdate);
         Deencapsulation.setField(module, "cloudToDeviceMessageCount", expectedCloudToDeviceMessageCount);
         Deencapsulation.setField(module, "connectionState", expectedConnectionState);
         Deencapsulation.setField(module, "connectionStateUpdatedTime", expectedConnectionStateUpdatedTime);

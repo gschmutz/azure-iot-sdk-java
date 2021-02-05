@@ -7,7 +7,6 @@ import com.microsoft.azure.sdk.iot.device.DeviceTwin.DeviceMethodData;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class DeviceMethodDataTest
 {
@@ -24,7 +23,7 @@ public class DeviceMethodDataTest
         int testStatus = testData.getStatus();
         String testResponse = testData.getResponseMessage();
 
-        assertTrue(testStatus == 0);
+        assertEquals(0, testStatus);
         assertEquals(testResponse, "testMessage");
     }
 
@@ -41,7 +40,7 @@ public class DeviceMethodDataTest
         int testStatus = testData.getStatus();
 
         //assert
-        assertTrue(testStatus == 0);
+        assertEquals(0, testStatus);
 
     }
 
@@ -75,7 +74,7 @@ public class DeviceMethodDataTest
 
         //assert
         int testStatus = testData.getStatus();
-        assertTrue(testStatus == 200);
+        assertEquals(200, testStatus);
 
     }
 

@@ -21,14 +21,11 @@ import com.microsoft.azure.sdk.iot.provisioning.security.hsm.SecurityProviderTPM
 import com.microsoft.azure.sdk.iot.provisioning.service.configs.*;
 import com.microsoft.azure.sdk.iot.provisioning.service.exceptions.ProvisioningServiceClientException;
 import com.microsoft.azure.sdk.iot.service.IotHubConnectionString;
-import com.microsoft.azure.sdk.iot.service.RegistryManager;
-import com.microsoft.azure.sdk.iot.service.RegistryManagerOptions;
 import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwin;
 import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinClientOptions;
 import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
 import com.microsoft.azure.sdk.iot.service.devicetwin.Pair;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
-import com.microsoft.azure.sdk.iot.service.exceptions.IotHubNotFoundException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import static com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientTransportProtocol.*;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.fail;
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -99,7 +97,6 @@ public class ProvisioningTests extends ProvisioningCommon
 
         testInstance.securityProvider = getSecurityProviderInstance(EnrollmentType.INDIVIDUAL, AllocationPolicy.CUSTOM, null, allocDefinition, null);
         registerDevice(testInstance.protocol, testInstance.securityProvider, provisioningServiceGlobalEndpoint, true, jsonPayload, expectedHubToProvisionTo);
-        cleanUpReprovisionedDeviceAndEnrollment(testInstance.provisionedDeviceId, EnrollmentType.INDIVIDUAL);
     }
 
     @Test
@@ -207,7 +204,7 @@ public class ProvisioningTests extends ProvisioningCommon
         }
 
         SecurityProvider securityProvider = new SecurityProviderTPMEmulator(testInstance.registrationId, MAX_TPM_CONNECT_RETRY_ATTEMPTS);
-        Attestation attestation = new TpmAttestation(new String(com.microsoft.azure.sdk.iot.deps.util.Base64.encodeBase64Local(((SecurityProviderTpm) securityProvider).getEndorsementKey())));
+        Attestation attestation = new TpmAttestation(new String(encodeBase64(((SecurityProviderTpm) securityProvider).getEndorsementKey())));
         IndividualEnrollment individualEnrollment = new IndividualEnrollment(testInstance.registrationId, attestation);
         testInstance.provisioningServiceClient.createOrUpdateIndividualEnrollment(individualEnrollment);
 
@@ -263,6 +260,7 @@ public class ProvisioningTests extends ProvisioningCommon
         registerDevice(testInstance.protocol, testInstance.securityProvider, provisioningServiceGlobalEndpoint, true, null, expectedHubToProvisionTo, null);
     }
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method, the params can be passed any value.
     protected void reprovisioningFlow(EnrollmentType enrollmentType, AllocationPolicy allocationPolicy, ReprovisionPolicy reprovisionPolicy, CustomAllocationDefinition customAllocationDefinition, List<String> iothubsToStartAt, List<String> iothubsToFinishAt) throws Exception
     {
         DeviceCapabilities capabilities = new DeviceCapabilities();
@@ -299,13 +297,11 @@ public class ProvisioningTests extends ProvisioningCommon
         //re-register device, test which hub it was provisioned to
         registerDevice(testInstance.protocol, testInstance.securityProvider, provisioningServiceGlobalEndpoint, true, reprovisionPolicy.getUpdateHubAssignment() ? iothubsToFinishAt : iothubsToStartAt);
         assertTwinIsCorrect(reprovisionPolicy, expectedReportedPropertyName, expectedReportedPropertyValue, !reprovisionPolicy.getUpdateHubAssignment());
-
-        cleanUpReprovisionedDeviceAndEnrollment(testInstance.provisionedDeviceId, enrollmentType);
     }
 
-    private class StubTwinCallback implements IotHubEventCallback, PropertyCallBack
+    private static class StubTwinCallback implements IotHubEventCallback, PropertyCallBack
     {
-        private CountDownLatch twinLock;
+        private final CountDownLatch twinLock;
 
         public StubTwinCallback(CountDownLatch twinLock)
         {
@@ -377,7 +373,7 @@ public class ProvisioningTests extends ProvisioningCommon
 
     private void assertTwinIsCorrect(ReprovisionPolicy reprovisionPolicy, String expectedPropertyName, String expectedPropertyValue, boolean inFarAwayHub) throws IOException, IotHubException
     {
-        if (reprovisionPolicy != null && reprovisionPolicy.getMigrateDeviceData() == true)
+        if (reprovisionPolicy != null && reprovisionPolicy.getMigrateDeviceData())
         {
             DeviceTwin twinClient;
             if (inFarAwayHub)
@@ -412,51 +408,6 @@ public class ProvisioningTests extends ProvisioningCommon
                 assertEquals(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Twin size is unexpected value", getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId),
                         0, device.getReportedProperties().size());
             }
-        }
-    }
-
-    private void cleanUpReprovisionedDeviceAndEnrollment(String deviceId, EnrollmentType enrollmentType)
-    {
-        try
-        {
-            //delete provisioned device
-            RegistryManager registryManagerFarAway = RegistryManager.createFromConnectionString(farAwayIotHubConnectionString);
-            RegistryManager registryManager = RegistryManager.createFromConnectionString(iotHubConnectionString, RegistryManagerOptions.builder().httpReadTimeout(HTTP_READ_TIMEOUT).build());
-
-            if (deviceId != null && !deviceId.isEmpty())
-            {
-                try
-                {
-                    registryManager.removeDevice(deviceId);
-                }
-                catch (IotHubNotFoundException e)
-                {
-                    //device wasn't in hub, can ignore this exception
-                }
-
-                try
-                {
-                    registryManagerFarAway.removeDevice(deviceId);
-                }
-                catch (IotHubNotFoundException e)
-                {
-                    //device wasn't in hub, can ignore this exception
-                }
-            }
-
-            //delete enrollment
-            if (enrollmentType == EnrollmentType.GROUP)
-            {
-                testInstance.provisioningServiceClient.deleteEnrollmentGroup(testInstance.groupId);
-            }
-            else
-            {
-                testInstance.provisioningServiceClient.deleteIndividualEnrollment(testInstance.individualEnrollment.getRegistrationId());
-            }
-        }
-        catch (Exception e)
-        {
-            //Don't really care if test tear down failed. Nightly jobs will clean up these enrollments if the above code fails in any way
         }
     }
 

@@ -5,17 +5,15 @@
 
 package com.microsoft.azure.sdk.iot.device;
 
-import java.net.Authenticator;
 import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.Proxy.Type;
 
 public class ProxySettings
 {
-    private Proxy proxy;
-    private String username;
-    private char[] password;
+    private final Proxy proxy;
+    private final String username;
+    private final char[] password;
 
     /**
      * Create proxy settings for connecting to a proxy with a username and password

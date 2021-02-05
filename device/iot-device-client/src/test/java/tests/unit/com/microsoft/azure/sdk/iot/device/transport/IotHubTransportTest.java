@@ -29,6 +29,7 @@ import static junit.framework.TestCase.*;
 /**
  * Unit tests for IotHubTransportPacket.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class IotHubTransportTest
 {
     @Mocked
@@ -100,12 +101,20 @@ public class IotHubTransportTest
     public void constructorSucceeds()
     {
         //act
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //assert
-        assertEquals(mockedConfig, Deencapsulation.getField(transport, "defaultConfig"));
         assertEquals(DISCONNECTED, Deencapsulation.getField(transport, "connectionStatus"));
-        assertEquals(0, Deencapsulation.getField(transport, "currentReconnectionAttempt"));
+        Map<String, DeviceClientConfig> configs = Deencapsulation.getField(transport, "deviceClientConfigs");
+        assertEquals(1, configs.size());
+        assertEquals(configs.values().iterator().next(), mockedConfig);
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_002: [If the provided config is null, this function shall throw an IllegalArgumentException.]
@@ -122,6 +131,13 @@ public class IotHubTransportTest
     public void onMessageSentRetrievesFromInProgressAndCallsHandleMessageExceptionForTransportException()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final String messageId = "1234";
         final Map<String, IotHubTransportPacket> inProgressPackets = new ConcurrentHashMap<>();
@@ -139,7 +155,7 @@ public class IotHubTransportTest
         };
 
         //act
-        transport.onMessageSent(mockedMessage, mockedTransportException);
+        transport.onMessageSent(mockedMessage, null, mockedTransportException);
 
         //assert
         new Verifications()
@@ -156,6 +172,13 @@ public class IotHubTransportTest
     public void onMessageSentRetrievesFromInProgressAndAddsToCallbackForNoException()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final String messageId = "1234";
         final Map<String, IotHubTransportPacket> inProgressPackets = new ConcurrentHashMap<>();
@@ -171,7 +194,7 @@ public class IotHubTransportTest
         };
 
         //act
-        transport.onMessageSent(mockedMessage, null);
+        transport.onMessageSent(mockedMessage, null, null);
 
         //assert
         Queue<IotHubTransportPacket> callbackPacketsQueue = Deencapsulation.getField(transport, "callbackPacketsQueue");
@@ -191,6 +214,13 @@ public class IotHubTransportTest
     public void onMessageSentRetrievesFromInProgressAndCallsHandleMessageExceptionForNonTransportException()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final String messageId = "1234";
         final IOException nonTransportException = new IOException();
@@ -212,7 +242,7 @@ public class IotHubTransportTest
         };
 
         //act
-        transport.onMessageSent(mockedMessage, nonTransportException);
+        transport.onMessageSent(mockedMessage, null, nonTransportException);
 
         //assert
         new Verifications()
@@ -229,6 +259,13 @@ public class IotHubTransportTest
     public void onMessageReceivedWithMessageAndNoExceptionAddsToQueue()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -256,6 +293,15 @@ public class IotHubTransportTest
                 }
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", IotHubConnectionStatus.DISCONNECTED);
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -288,6 +334,15 @@ public class IotHubTransportTest
                 fail("should not have called this method");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final String expectedConnectionId = "1234";
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -325,8 +380,14 @@ public class IotHubTransportTest
                 methodsCalled.append("addReceivedMessagesOverHttpToReceivedQueue");
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final IOException nonTransportException = new IOException();
         final String expectedConnectionId = "1234";
         Deencapsulation.setField(transport, "connectionStatus", IotHubConnectionStatus.CONNECTED);
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -360,6 +421,13 @@ public class IotHubTransportTest
                 {
                     methodsCalled.append("handleDisconnection");
                 }
+            }
+        };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
             }
         };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
@@ -404,6 +472,13 @@ public class IotHubTransportTest
                 }
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final String expectedConnectionId = "1234";
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -423,40 +498,25 @@ public class IotHubTransportTest
         assertEquals("updateStatus", methodsCalled.toString());
     }
 
-    //Tests_SRS_IOTHUBTRANSPORT_34_015: [If the provided list of configs is null or empty, this function shall throw an IllegalArgumentException.]
-    @Test (expected = IllegalArgumentException.class)
-    public void openThrowsForNullConfigList() throws DeviceClientException
-    {
-        //arrange
-        IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-
-        //act
-        transport.open(null);
-    }
-
-    //Tests_SRS_IOTHUBTRANSPORT_34_015: [If the provided list of configs is null or empty, this function shall throw an IllegalArgumentException.]
-    @Test (expected = IllegalArgumentException.class)
-    public void openThrowsForEmptyConfigList() throws DeviceClientException
-    {
-        //arrange
-        IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-
-        //act
-        transport.open(new ArrayList<DeviceClientConfig>());
-    }
-
     //Tests_SRS_IOTHUBTRANSPORT_34_016: [If the connection status of this object is DISCONNECTED_RETRYING, this function shall throw a TransportException.]
     @Test (expected = TransportException.class)
     public void openThrowsIfConnectionStatusIsDisconnectedRetrying() throws DeviceClientException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED_RETRYING);
         Collection<DeviceClientConfig> configs = new ArrayList<>();
         configs.add(mockedConfig);
 
         //act
-        transport.open(configs);
+        transport.open();
     }
 
 
@@ -472,13 +532,21 @@ public class IotHubTransportTest
                 return true;
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED);
         Collection<DeviceClientConfig> configs = new ArrayList<>();
         configs.add(mockedConfig);
 
         //act
-        transport.open(configs);
+        transport.open();
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_019: [This function shall open the invoke the method openConnection.]
@@ -487,6 +555,14 @@ public class IotHubTransportTest
     {
         //arrange
         final StringBuilder verifier = new StringBuilder();
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED);
         Collection<DeviceClientConfig> configs = new ArrayList<>();
@@ -506,7 +582,7 @@ public class IotHubTransportTest
         };
 
         //act
-        transport.open(configs);
+        transport.open();
 
         //assert
         assertTrue(verifier.toString().equalsIgnoreCase("Success"));
@@ -525,13 +601,21 @@ public class IotHubTransportTest
             }
         };
 
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", CONNECTED);
         Collection<DeviceClientConfig> configs = new ArrayList<>();
         configs.add(mockedConfig);
 
         //act
-        transport.open(configs);
+        transport.open();
     }
 
 
@@ -540,6 +624,13 @@ public class IotHubTransportTest
     public void closeThrowsForNullReason() throws DeviceClientException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -579,7 +670,13 @@ public class IotHubTransportTest
         inProgressPackets.put("1", mockedPacket);
         inProgressPackets.put("2", mockedPacket);
 
-
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", CONNECTED);
         Deencapsulation.setField(transport, "waitingPacketsQueue", waitingPacketsQueue);
@@ -621,6 +718,13 @@ public class IotHubTransportTest
     public void exceptionToStatusChangeReasonWithNonTransportException()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -635,6 +739,13 @@ public class IotHubTransportTest
     public void exceptionToStatusChangeReasonWithRetryableTransportException()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         new NonStrictExpectations()
@@ -664,6 +775,14 @@ public class IotHubTransportTest
                 return true;
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         new Expectations()
@@ -686,6 +805,13 @@ public class IotHubTransportTest
     public void exceptionToStatusChangeReasonBadCredentialForAmqpUnauthorizedException(@Mocked final AmqpUnauthorizedAccessException mockedUnauthorizedException)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         new NonStrictExpectations(IotHubTransport.class)
@@ -711,6 +837,13 @@ public class IotHubTransportTest
     public void exceptionToStatusChangeReasonBadCredentialForMqttUnauthorizedException(@Mocked final MqttUnauthorizedException mockedUnauthorizedException)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         new NonStrictExpectations(IotHubTransport.class)
@@ -737,6 +870,13 @@ public class IotHubTransportTest
     public void exceptionToStatusChangeReasonBadCredentialForGenericUnauthorizedException(@Mocked final UnauthorizedException mockedUnauthorizedException)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         new NonStrictExpectations(IotHubTransport.class)
@@ -765,11 +905,15 @@ public class IotHubTransportTest
     public void openConnectionWithHttp()
     {
         //arrange
-        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Queue<DeviceClientConfig> configs = new ConcurrentLinkedQueue<>();
-        configs.add(mockedConfig);
-        Deencapsulation.setField(transport, "deviceClientConfigs", configs);
-        Deencapsulation.setField(transport, "iotHubTransportConnection", null);
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         new Expectations(IotHubTransport.class)
         {
             {
@@ -781,6 +925,10 @@ public class IotHubTransportTest
             }
         };
 
+        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
+        ((Map<String, DeviceClientConfig>) Deencapsulation.getField(transport, "deviceClientConfigs")).put("someDeviceId", mockedConfig);
+        Deencapsulation.setField(transport, "iotHubTransportConnection", null);
+
         //act
         Deencapsulation.invoke(transport, "openConnection");
 
@@ -791,7 +939,7 @@ public class IotHubTransportTest
                 mockedHttpsIotHubConnection.setListener(transport);
                 times = 1;
 
-                mockedHttpsIotHubConnection.open(configs);
+                mockedHttpsIotHubConnection.open();
                 times = 1;
 
                 Deencapsulation.invoke(transport, "updateStatus",
@@ -806,10 +954,14 @@ public class IotHubTransportTest
     public void openConnectionWithMqtt() throws TransportException
     {
         //arrange
-        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Queue<DeviceClientConfig> configs = new ConcurrentLinkedQueue<>();
-        configs.add(mockedConfig);
-        Deencapsulation.setField(transport, "deviceClientConfigs", configs);
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         new Expectations(IotHubTransport.class)
         {
             {
@@ -821,6 +973,9 @@ public class IotHubTransportTest
             }
         };
 
+        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
+        ((Map<String, DeviceClientConfig>) Deencapsulation.getField(transport, "deviceClientConfigs")).put("someDeviceId", mockedConfig);
+
         //act
         Deencapsulation.invoke(transport, "openConnection");
 
@@ -831,7 +986,7 @@ public class IotHubTransportTest
                 mockedMqttIotHubConnection.setListener(transport);
                 times = 1;
 
-                mockedMqttIotHubConnection.open(configs);
+                mockedMqttIotHubConnection.open();
                 times = 1;
             }
         };
@@ -842,10 +997,14 @@ public class IotHubTransportTest
     public void openConnectionWithMqttWS() throws TransportException
     {
         //arrange
-        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Queue<DeviceClientConfig> configs = new ConcurrentLinkedQueue<>();
-        configs.add(mockedConfig);
-        Deencapsulation.setField(transport, "deviceClientConfigs", configs);
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         new Expectations(IotHubTransport.class)
         {
             {
@@ -857,6 +1016,9 @@ public class IotHubTransportTest
             }
         };
 
+        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
+        ((Map<String, DeviceClientConfig>) Deencapsulation.getField(transport, "deviceClientConfigs")).put("someDeviceId", mockedConfig);
+
         //act
         Deencapsulation.invoke(transport, "openConnection");
 
@@ -867,7 +1029,7 @@ public class IotHubTransportTest
                 mockedMqttIotHubConnection.setListener(transport);
                 times = 1;
 
-                mockedMqttIotHubConnection.open(configs);
+                mockedMqttIotHubConnection.open();
                 times = 1;
             }
         };
@@ -878,10 +1040,14 @@ public class IotHubTransportTest
     public void openConnectionWithAmqps() throws TransportException
     {
         //arrange
-        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Queue<DeviceClientConfig> configs = new ConcurrentLinkedQueue<>();
-        configs.add(mockedConfig);
-        Deencapsulation.setField(transport, "deviceClientConfigs", configs);
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         new Expectations(IotHubTransport.class)
         {
             {
@@ -892,6 +1058,9 @@ public class IotHubTransportTest
             }
         };
 
+        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
+        ((Map<String, DeviceClientConfig>) Deencapsulation.getField(transport, "deviceClientConfigs")).put("someDeviceId", mockedConfig);
+
         //act
         Deencapsulation.invoke(transport, "openConnection");
 
@@ -902,7 +1071,7 @@ public class IotHubTransportTest
                 mockedAmqpsIotHubConnection.setListener(transport);
                 times = 1;
 
-                mockedAmqpsIotHubConnection.open(configs);
+                mockedAmqpsIotHubConnection.open();
                 times = 1;
             }
         };
@@ -913,10 +1082,13 @@ public class IotHubTransportTest
     public void openConnectionWithAmqpsWS() throws TransportException
     {
         //arrange
-        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Queue<DeviceClientConfig> configs = new ConcurrentLinkedQueue<>();
-        configs.add(mockedConfig);
-        Deencapsulation.setField(transport, "deviceClientConfigs", configs);
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         new Expectations(IotHubTransport.class)
         {
             {
@@ -926,6 +1098,8 @@ public class IotHubTransportTest
                 result = mockedAmqpsIotHubConnection;
             }
         };
+        final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
+        ((Map<String, DeviceClientConfig>) Deencapsulation.getField(transport, "deviceClientConfigs")).put("someDeviceId", mockedConfig);
 
         //act
         Deencapsulation.invoke(transport, "openConnection");
@@ -937,7 +1111,7 @@ public class IotHubTransportTest
                 mockedAmqpsIotHubConnection.setListener(transport);
                 times = 1;
 
-                mockedAmqpsIotHubConnection.open(configs);
+                mockedAmqpsIotHubConnection.open();
                 times = 1;
             }
         };
@@ -951,6 +1125,15 @@ public class IotHubTransportTest
         final Queue<IotHubTransportPacket> waitingPacketsQueue = new ConcurrentLinkedQueue<>();
         final Map<String, IotHubTransportPacket> inProgressPackets = new ConcurrentHashMap<>();
         final Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "waitingPacketsQueue", waitingPacketsQueue);
         Deencapsulation.setField(transport, "inProgressPackets", inProgressPackets);
@@ -972,6 +1155,14 @@ public class IotHubTransportTest
         final Map<String, IotHubTransportPacket> inProgressPackets = new ConcurrentHashMap<>();
         final Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
         waitingPacketsQueue.add(mockedPacket);
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
 
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "waitingPacketsQueue", waitingPacketsQueue);
@@ -995,6 +1186,13 @@ public class IotHubTransportTest
         final Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
         inProgressPackets.put("asdf", mockedPacket);
 
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "waitingPacketsQueue", waitingPacketsQueue);
         Deencapsulation.setField(transport, "inProgressPackets", inProgressPackets);
@@ -1017,6 +1215,14 @@ public class IotHubTransportTest
         final Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
         callbackPacketsQueue.add(mockedPacket);
 
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "waitingPacketsQueue", waitingPacketsQueue);
         Deencapsulation.setField(transport, "inProgressPackets", inProgressPackets);
@@ -1034,6 +1240,14 @@ public class IotHubTransportTest
     public void hasOperationTimedOutTrue()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
@@ -1055,6 +1269,13 @@ public class IotHubTransportTest
     public void hasOperationTimedOutReturnsFalseIfProvidedTimeIsZero()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
@@ -1076,6 +1297,13 @@ public class IotHubTransportTest
     public void hasOperationTimedOutFalse()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
@@ -1097,11 +1325,19 @@ public class IotHubTransportTest
     public void addMessageThrowsIfDisconnected()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED);
 
         //act
-        transport.addMessage(mockedMessage, mockedEventCallback, new Object());
+        transport.addMessage(mockedMessage, mockedEventCallback, new Object(), null);
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_042: [This function shall build a transport packet from the provided message, callback, and context and then add that packet to the waiting queue.]
@@ -1109,6 +1345,13 @@ public class IotHubTransportTest
     public void addMessageAddsMessage()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", CONNECTED);
         Queue<IotHubTransportPacket> waitingPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -1117,13 +1360,13 @@ public class IotHubTransportTest
         new NonStrictExpectations()
         {
             {
-                new IotHubTransportPacket(mockedMessage, mockedEventCallback, any, null, anyLong);
+                new IotHubTransportPacket(mockedMessage, mockedEventCallback, any, null, anyLong, null);
                 result = mockedPacket;
             }
         };
 
         //act
-        transport.addMessage(mockedMessage, mockedEventCallback, new Object());
+        transport.addMessage(mockedMessage, mockedEventCallback, new Object(), null);
 
         //assert
         assertEquals(1, waitingPacketsQueue.size());
@@ -1134,6 +1377,13 @@ public class IotHubTransportTest
     public void sendMessagesDoesNothingIfNotConnected()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED);
         Queue<IotHubTransportPacket> waitingPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -1149,6 +1399,7 @@ public class IotHubTransportTest
 
     //Tests_SRS_IOTHUBTRANSPORT_34_044: [This function continue to dequeue packets saved in the waiting
     // queue and send them until connection status isn't CONNECTED or until 10 messages have been sent]
+    @SuppressWarnings("EmptyMethod")
     @Test
     public void sendMessagesSendsMessages()
     {
@@ -1158,6 +1409,14 @@ public class IotHubTransportTest
             @Mock void sendPacket(IotHubTransportPacket packet)
             {
                 //do nothing
+            }
+        };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
             }
         };
 
@@ -1185,6 +1444,13 @@ public class IotHubTransportTest
     public void invokeCallbacksInvokesAllCallbacks(final @Mocked IotHubStatusCode mockedStatus)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
         callbackPacketsQueue.add(mockedPacket);
@@ -1232,6 +1498,14 @@ public class IotHubTransportTest
                 fail("should not have called this method");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED);
         Queue<IotHubTransportMessage> receivedMessagesQueue = new ConcurrentLinkedQueue<>();
@@ -1270,6 +1544,14 @@ public class IotHubTransportTest
                 methodsCalled.append("addReceivedMessagesOverHttpToReceivedQueue");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", CONNECTED);
         Queue<IotHubTransportMessage> receivedMessagesQueue = new ConcurrentLinkedQueue<>();
@@ -1305,6 +1587,13 @@ public class IotHubTransportTest
                 }
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", CONNECTED);
         Queue<IotHubTransportMessage> receivedMessagesQueue = new ConcurrentLinkedQueue<>();
@@ -1325,6 +1614,13 @@ public class IotHubTransportTest
     public void registerConnectionStateCallbackThrowsForNullCallback()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -1336,6 +1632,13 @@ public class IotHubTransportTest
     public void registerConnectionStateCallbackSavesProvidedCallbackAndContext()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final Object context = new Object();
 
@@ -1352,10 +1655,17 @@ public class IotHubTransportTest
     public void registerConnectionStatusChangeCallbackThrowsForNullCallback()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
-        transport.registerConnectionStatusChangeCallback(null, new Object());
+        transport.registerConnectionStatusChangeCallback(null, new Object(), "someString");
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_051: [If the provided callback is null but the context is not, this function shall throw an IllegalArgumentException.]
@@ -1363,34 +1673,18 @@ public class IotHubTransportTest
     public void registerConnectionStatusChangeCallbackDoesNotThrowForNullCallbackIfContextIsAlsoNull()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        transport.registerConnectionStatusChangeCallback(mockedIotHubConnectionStatusChangeCallback, new Object());
-        assertNotNull(Deencapsulation.getField(transport, "connectionStatusChangeCallback"));
-        assertNotNull(Deencapsulation.getField(transport, "connectionStatusChangeCallbackContext"));
 
         //act
-        transport.registerConnectionStatusChangeCallback(null, null);
-
-        //assert
-        assertNull(Deencapsulation.getField(transport, "connectionStatusChangeCallback"));
-        assertNull(Deencapsulation.getField(transport, "connectionStatusChangeCallbackContext"));
-
-    }
-
-    //Tests_SRS_IOTHUBTRANSPORT_34_052: [This function shall save the provided callback and context.]
-    @Test
-    public void registerConnectionStatusChangeCallbackSavesProvidedCallbackAndContext()
-    {
-        //arrange
-        IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        final Object context = new Object();
-
-        //act
-        transport.registerConnectionStatusChangeCallback(mockedIotHubConnectionStatusChangeCallback, context);
-
-        //assert
-        assertEquals(mockedIotHubConnectionStatusChangeCallback, Deencapsulation.getField(transport, "connectionStatusChangeCallback"));
-        assertEquals(context, Deencapsulation.getField(transport, "connectionStatusChangeCallbackContext"));
+        transport.registerConnectionStatusChangeCallback(null, null, "someDeviceId");
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_053: [This function shall execute the callback associate with the provided
@@ -1401,6 +1695,13 @@ public class IotHubTransportTest
     public void acknowledgeReceivedMessageSendsAck() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final Object context = new Object();
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -1437,6 +1738,13 @@ public class IotHubTransportTest
     public void acknowledgeReceivedMessageReQueuesFailedMessages() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final Object context = new Object();
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
@@ -1480,6 +1788,14 @@ public class IotHubTransportTest
     public void addReceivedMessagesOverHttpToReceivedQueueChecksForHttpMessages() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedHttpsIotHubConnection);
 
@@ -1530,6 +1846,15 @@ public class IotHubTransportTest
                 methodsCalled.append("reconnect");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -1543,6 +1868,7 @@ public class IotHubTransportTest
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_061: [This function shall close the saved connection, and then invoke openConnection and return null.]
+    @SuppressWarnings("EmptyMethod")
     @Test
     public void singleReconnectAttemptSuccess() throws TransportException
     {
@@ -1554,6 +1880,15 @@ public class IotHubTransportTest
                 //do nothing
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
 
@@ -1578,6 +1913,13 @@ public class IotHubTransportTest
     public void singleReconnectAttemptReturnsEncounteredException() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
 
@@ -1613,11 +1955,19 @@ public class IotHubTransportTest
     public void handleMessageExceptionSchedulesRetryIfRetryable()
     {
         //arrange
+        final String deviceId = "someDeviceId";
         new MockUp<IotHubTransport>()
         {
             @Mock boolean hasOperationTimedOut(long time)
             {
                 return false;
+            }
+        };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = deviceId;
             }
         };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
@@ -1642,6 +1992,9 @@ public class IotHubTransportTest
 
                 mockedRetryDecision.getDuration();
                 result = duration;
+
+                mockedPacket.getDeviceId();
+                result = deviceId;
             }
         };
 
@@ -1672,6 +2025,13 @@ public class IotHubTransportTest
             @Mock boolean hasOperationTimedOut(long time)
             {
                 return true;
+            }
+        };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
             }
         };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
@@ -1729,6 +2089,13 @@ public class IotHubTransportTest
                 return false;
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         final long expectedDelay = 0;
         Deencapsulation.setField(transport, "taskScheduler", mockedTaskScheduler);
@@ -1777,11 +2144,19 @@ public class IotHubTransportTest
     public void handleMessageExceptionDoesNotRetryIfRetryPolicySaysToNotRetry(final @Mocked IotHubStatusCode mockedStatus)
     {
         //arrange
+        final String deviceId = "someDeviceId";
         new MockUp<IotHubTransport>()
         {
             @Mock boolean hasOperationTimedOut(long time)
             {
                 return false;
+            }
+        };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = deviceId;
             }
         };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
@@ -1804,6 +2179,9 @@ public class IotHubTransportTest
 
                 mockedIothubServiceException.getStatusCode();
                 result = mockedStatus;
+
+                mockedPacket.getDeviceId();
+                result = deviceId;
             }
         };
 
@@ -1852,6 +2230,14 @@ public class IotHubTransportTest
                 }
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED_RETRYING);
         new Expectations()
@@ -1875,8 +2261,6 @@ public class IotHubTransportTest
         Deencapsulation.invoke(transport, "reconnect", mockedTransportException);
 
         //assert
-        long reconnectionAttemptStartTimeMillis = Deencapsulation.getField(transport, "reconnectionAttemptStartTimeMillis");
-        assertTrue(reconnectionAttemptStartTimeMillis > 0);
         assertEquals("close", methodsCalled.toString());
     }
 
@@ -1903,6 +2287,15 @@ public class IotHubTransportTest
                 }
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED_RETRYING);
 
@@ -1910,8 +2303,6 @@ public class IotHubTransportTest
         Deencapsulation.invoke(transport, "reconnect", mockedTransportException);
 
         //assert
-        long reconnectionAttemptStartTimeMillis = Deencapsulation.getField(transport, "reconnectionAttemptStartTimeMillis");
-        assertTrue(reconnectionAttemptStartTimeMillis > 0);
         assertEquals("close", methodsCalled.toString());
     }
 
@@ -1944,6 +2335,14 @@ public class IotHubTransportTest
                 return IotHubConnectionStatusChangeReason.BAD_CREDENTIAL;
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED_RETRYING);
 
@@ -1951,8 +2350,6 @@ public class IotHubTransportTest
         Deencapsulation.invoke(transport, "reconnect", mockedTransportException);
 
         //assert
-        long reconnectionAttemptStartTimeMillis = Deencapsulation.getField(transport, "reconnectionAttemptStartTimeMillis");
-        assertTrue(reconnectionAttemptStartTimeMillis > 0);
         assertTrue(methodsCalled.toString().contains("close"));
         assertTrue(methodsCalled.toString().contains("exceptionToStatusChangeReason"));
     }
@@ -1994,6 +2391,13 @@ public class IotHubTransportTest
                 throw new TransportException("close failed");
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", DISCONNECTED_RETRYING);
         new NonStrictExpectations()
@@ -2017,8 +2421,6 @@ public class IotHubTransportTest
         Deencapsulation.invoke(transport, "reconnect", mockedTransportException);
 
         //assert
-        long reconnectionAttemptStartTimeMillis = Deencapsulation.getField(transport, "reconnectionAttemptStartTimeMillis");
-        assertTrue(reconnectionAttemptStartTimeMillis > 0);
         assertTrue(methodsCalled.toString().contains("updateStatus"));
     }
 
@@ -2028,6 +2430,13 @@ public class IotHubTransportTest
     public void isMessageValidWithMessageExpired()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations(IotHubTransport.class)
         {
@@ -2066,6 +2475,14 @@ public class IotHubTransportTest
     public void isMessageValidWithMessageNotExpiredAndValidSasToken()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations(IotHubTransport.class)
         {
@@ -2115,12 +2532,19 @@ public class IotHubTransportTest
                 return true;
             }
 
-            @Mock void updateStatus(IotHubConnectionStatus newConnectionStatus, IotHubConnectionStatusChangeReason reason, Throwable throwable)
+            @Mock void updateStatus(IotHubConnectionStatus newConnectionStatus, IotHubConnectionStatusChangeReason reason, Throwable throwable, String deviceId)
             {
                 if (newConnectionStatus == DISCONNECTED && reason == EXPIRED_SAS_TOKEN)
                 {
                     methodsCalled.append("updateStatus");
                 }
+            }
+        };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
             }
         };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
@@ -2165,10 +2589,17 @@ public class IotHubTransportTest
                 methodsCalled.append("invokeConnectionStatusChangeCallback");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", IotHubConnectionStatus.DISCONNECTED_RETRYING);
-        Deencapsulation.setField(transport, "currentReconnectionAttempt", 5);
-        Deencapsulation.setField(transport, "reconnectionAttemptStartTimeMillis", 5);
 
         //act
         Deencapsulation.invoke(transport, "updateStatus",
@@ -2177,8 +2608,6 @@ public class IotHubTransportTest
 
         //assert
         assertEquals(IotHubConnectionStatus.CONNECTED, Deencapsulation.getField(transport, "connectionStatus"));
-        assertEquals(0, Deencapsulation.getField(transport, "currentReconnectionAttempt"));
-        assertEquals(0L, Deencapsulation.getField(transport, "reconnectionAttemptStartTimeMillis"));
         assertTrue(methodsCalled.toString().equalsIgnoreCase("invokeConnectionStatusChangeCallback"));
     }
 
@@ -2189,9 +2618,15 @@ public class IotHubTransportTest
     public void updateStatusConnectionStatusNotChanged()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", IotHubConnectionStatus.CONNECTED);
-        Deencapsulation.setField(transport, "currentReconnectionAttempt", 5);
         new Expectations(IotHubTransport.class)
         {
             {
@@ -2208,7 +2643,6 @@ public class IotHubTransportTest
 
         //assert
         assertEquals(IotHubConnectionStatus.CONNECTED, Deencapsulation.getField(transport, "connectionStatus"));
-        assertEquals(5, Deencapsulation.getField(transport, "currentReconnectionAttempt"));
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_28_005:[This function shall updated the saved connection status if the connection status has changed.]
@@ -2229,9 +2663,15 @@ public class IotHubTransportTest
                 }
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Deencapsulation.setField(transport, "connectionStatus", IotHubConnectionStatus.DISCONNECTED_RETRYING);
-        Deencapsulation.setField(transport, "currentReconnectionAttempt", 5);
 
         //act
         Deencapsulation.invoke(transport, "updateStatus",
@@ -2240,7 +2680,6 @@ public class IotHubTransportTest
 
         //assert
         assertEquals(IotHubConnectionStatus.DISCONNECTED, Deencapsulation.getField(transport, "connectionStatus"));
-        assertEquals(5, Deencapsulation.getField(transport, "currentReconnectionAttempt"));
         assertEquals("invokeConnectionStatusChangeCallback", methodsCalled.toString());
     }
 
@@ -2249,8 +2688,16 @@ public class IotHubTransportTest
     public void invokeConnectionStatusChangeCallbackWithCallback()
     {
         //arrange
+        final String deviceId = "someDeviceId";
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = deviceId;
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        Deencapsulation.setField(transport, "connectionStatusChangeCallback", mockedIotHubConnectionStatusChangeCallback);
+        transport.registerConnectionStatusChangeCallback(mockedIotHubConnectionStatusChangeCallback, null, deviceId);
 
         //act
         Deencapsulation.invoke(transport, "invokeConnectionStatusChangeCallback",
@@ -2276,13 +2723,21 @@ public class IotHubTransportTest
     public void invokeConnectionStatusChangeCallbackWithNullCallback()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
-        Deencapsulation.setField(transport, "connectionStatusChangeCallback", null);
+        final String deviceId = "someDevice";
+        transport.registerConnectionStatusChangeCallback(null, null, deviceId);
 
         //act
         Deencapsulation.invoke(transport, "invokeConnectionStatusChangeCallback",
                 new Class[] {IotHubConnectionStatus.class, IotHubConnectionStatusChangeReason.class, Throwable.class},
-                IotHubConnectionStatus.CONNECTED, IotHubConnectionStatusChangeReason.CONNECTION_OK, new IOException());
+                DISCONNECTED_RETRYING, NO_NETWORK, new IOException());
 
         //assert
 
@@ -2304,13 +2759,20 @@ public class IotHubTransportTest
     public void isSasTokenExpiredAuthenticationTypeIsSasTokenAndExpired()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
             {
                 mockedConfig.getAuthenticationType();
                 result = DeviceClientConfig.AuthType.SAS_TOKEN;
-                mockedConfig.getSasTokenAuthentication().isRenewalNecessary();
+                mockedConfig.getSasTokenAuthentication().isAuthenticationProviderRenewalNecessary();
                 result = true;
             }
         };
@@ -2327,13 +2789,20 @@ public class IotHubTransportTest
     public void isSasTokenExpiredAuthenticationTypeIsSasTokenAndNotExpired()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
             {
                 mockedConfig.getAuthenticationType();
                 result = DeviceClientConfig.AuthType.SAS_TOKEN;
-                mockedConfig.getSasTokenAuthentication().isRenewalNecessary();
+                mockedConfig.getSasTokenAuthentication().isAuthenticationProviderRenewalNecessary();
                 result = false;
             }
         };
@@ -2350,13 +2819,20 @@ public class IotHubTransportTest
     public void isSasTokenExpiredAuthenticationTypeNotSasToken()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
             {
                 mockedConfig.getAuthenticationType();
                 result = DeviceClientConfig.AuthType.X509_CERTIFICATE;
-                mockedConfig.getSasTokenAuthentication().isRenewalNecessary();
+                mockedConfig.getSasTokenAuthentication().isAuthenticationProviderRenewalNecessary();
                 result = true;
             }
         };
@@ -2373,6 +2849,13 @@ public class IotHubTransportTest
     public void addToCallbackQueuePacketHasCallback(@Mocked final IotHubEventCallback mockCallback)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
@@ -2396,6 +2879,13 @@ public class IotHubTransportTest
     public void addToCallbackQueuePacketNoCallback(@Mocked final IotHubEventCallback mockCallback)
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         new NonStrictExpectations()
         {
@@ -2426,6 +2916,15 @@ public class IotHubTransportTest
             }
         };
         final MqttUnauthorizedException testException = new MqttUnauthorizedException();
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2456,6 +2955,15 @@ public class IotHubTransportTest
         };
 
         final UnauthorizedException testException = new UnauthorizedException();
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2486,6 +2994,15 @@ public class IotHubTransportTest
         };
 
         final AmqpUnauthorizedAccessException testException = new AmqpUnauthorizedAccessException();
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2515,6 +3032,15 @@ public class IotHubTransportTest
             }
         };
         final UnauthorizedException testException = new UnauthorizedException();
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2544,6 +3070,13 @@ public class IotHubTransportTest
             }
         };
         final TransportException testException = new TransportException();
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2566,6 +3099,13 @@ public class IotHubTransportTest
     public void sendPacketHappyPathWithAck() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Deencapsulation.setField(transport, "inProgressPackets", inProgressMessages);
@@ -2609,6 +3149,13 @@ public class IotHubTransportTest
                 }
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Deencapsulation.setField(transport, "inProgressPackets", inProgressMessages);
@@ -2641,6 +3188,13 @@ public class IotHubTransportTest
     public void sendPacketHappyPathWithoutAck() throws TransportException
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -2691,6 +3245,15 @@ public class IotHubTransportTest
                 methodsCalled.append("handleMessageException");
             }
         };
+
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -2737,6 +3300,13 @@ public class IotHubTransportTest
                 }
             }
         };
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -2772,6 +3342,13 @@ public class IotHubTransportTest
     public void handleMessageExceptionChecksForAmqpThrottling()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         final IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
 
         //act
@@ -2791,6 +3368,13 @@ public class IotHubTransportTest
     public void sendMessagesChecksForExpiredMessagesInWaitingQueue()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();
@@ -2831,6 +3415,14 @@ public class IotHubTransportTest
     public void sendMessagesChecksForExpiredMessagesInInProgressPackets()
     {
         //arrange
+        new Expectations()
+        {
+            {
+                mockedConfig.getDeviceId();
+                result = "someDeviceId";
+            }
+        };
+
         IotHubTransport transport = new IotHubTransport(mockedConfig, mockedIotHubConnectionStatusChangeCallback);
         Map<String, IotHubTransportPacket> inProgressMessages = new HashMap<>();
         Queue<IotHubTransportPacket> callbackPacketsQueue = new ConcurrentLinkedQueue<>();

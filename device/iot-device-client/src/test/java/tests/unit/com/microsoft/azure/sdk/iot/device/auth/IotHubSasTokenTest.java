@@ -155,8 +155,7 @@ public class IotHubSasTokenTest
         String testSignature = tokenStr.substring(signatureStartIdx,
                 signatureEndIdx);
 
-        final String expectedSignature = signature;
-        assertThat(testSignature, is(expectedSignature));
+        assertThat(testSignature, is(signature));
     }
 
     // Tests_SRS_IOTHUBSASTOKEN_11_013: [**The token generated from DeviceClientConfig shall use correct expiry time (seconds rather than milliseconds)]
@@ -220,7 +219,7 @@ public class IotHubSasTokenTest
                 iotHubConnectionString.getModuleId(),
                 0);
         String tokenStr = token.toString();
-        assertTrue(tokenStr.equals(sastoken));
+        assertEquals(tokenStr, sastoken);
     }
 
     // Tests_SRS_IOTHUBSASTOKEN_25_008: [**The required format for the SAS Token shall be verified and IllegalArgumentException is thrown if unmatched.**]**
@@ -294,7 +293,7 @@ public class IotHubSasTokenTest
     @Test(expected = IllegalArgumentException.class)
     public void doesNotSetSASTokenWithoutSig() throws URISyntaxException
     {
-        String sastoken = "SharedAccessSignature sr=srValue&se=" + Long.MAX_VALUE;;
+        String sastoken = "SharedAccessSignature sr=srValue&se=" + Long.MAX_VALUE;
         final IotHubConnectionString iotHubConnectionString =
                 Deencapsulation.newInstance(IotHubConnectionString.class,
                         new Class[] {String.class, String.class, String.class, String.class},
@@ -384,7 +383,7 @@ public class IotHubSasTokenTest
                 iotHubConnectionString.getModuleId(),
                 0);
         String tokenStr = token.toString();
-        assertTrue(tokenStr.equals(sastoken));
+        assertEquals(tokenStr, sastoken);
     }
 
     // Tests_SRS_IOTHUBSASTOKEN_11_001: [**The SAS token shall have the format `SharedAccessSignature sig=<signature >&se=<expiryTime>&sr=<resourceURI>`. The params can be in any order.**]**
@@ -410,7 +409,7 @@ public class IotHubSasTokenTest
                 iotHubConnectionString.getModuleId(),
                 0);
         String tokenStr = token.toString();
-        assertTrue(tokenStr.equals(sastoken));
+        assertEquals(tokenStr, sastoken);
     }
 
     @Test(expected = IllegalArgumentException.class)

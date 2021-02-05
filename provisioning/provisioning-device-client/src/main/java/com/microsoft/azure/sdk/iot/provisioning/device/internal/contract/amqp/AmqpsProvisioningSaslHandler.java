@@ -12,8 +12,6 @@ import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.Provi
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.task.ContractState;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.task.ResponseData;
 
-import java.io.IOException;
-
 /**
  * Implementation of a SaslHandler that is designed to handle Sasl negotiation using TPM authentication against the Device Provisioning Service
  */
@@ -27,14 +25,14 @@ public class AmqpsProvisioningSaslHandler implements SaslHandler
     private final static long MAX_MILLISECONDS_TIMEOUT_FOR_SAS_TOKEN_WAIT = 60*1000; // 1 minute
     private final static long WAIT_INTERVALS = 4*1000; // 4 second wait intervals when waiting and checking for sas token
 
-    private String idScope;
-    private String registrationId;
-    private byte[] endorsementKey;
-    private byte[] storageRootKey;
+    private final String idScope;
+    private final String registrationId;
+    private final byte[] endorsementKey;
+    private final byte[] storageRootKey;
     private byte[] challengeKey;
     private ChallengeState challengeState;
-    private ResponseCallback responseCallback;
-    private Object authorizationCallbackContext;
+    private final ResponseCallback responseCallback;
+    private final Object authorizationCallbackContext;
     private String sasToken;
 
     /**
@@ -359,9 +357,9 @@ public class AmqpsProvisioningSaslHandler implements SaslHandler
     {
         // Determine the length of the result array
         int totalLength = 0;
-        for (int i = 0; i < arrays.length; i++)
+        for (byte[] array : arrays)
         {
-            totalLength += arrays[i].length;
+            totalLength += array.length;
         }
 
         //for X arrays, there will be X-1 delimiters
@@ -389,6 +387,7 @@ public class AmqpsProvisioningSaslHandler implements SaslHandler
         return result;
     }
 
+    @SuppressWarnings("SameParameterValue") // The "controlByte" is currently always an initial segment control byte, but this method can be used generically as well.
     private static byte[] prependByteArrayWithControlByte(byte controlByte, byte[] bytes)
     {
         byte[] newByteArray = new byte[bytes.length + 1];

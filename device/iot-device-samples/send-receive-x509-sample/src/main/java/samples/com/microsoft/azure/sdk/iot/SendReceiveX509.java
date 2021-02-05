@@ -19,7 +19,7 @@ import java.util.Scanner;
 public class SendReceiveX509
 {
     //PEM encoded representation of the public key certificate
-    private static String publicKeyCertificateString =
+    private static final String publicKeyCertificateString =
             "-----BEGIN CERTIFICATE-----\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
@@ -34,7 +34,7 @@ public class SendReceiveX509
             "-----END CERTIFICATE-----\n";
 
     //PEM encoded representation of the private key
-    private static String privateKeyString =
+    private static final String privateKeyString =
             "-----BEGIN EC PRIVATE KEY-----\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
@@ -42,7 +42,7 @@ public class SendReceiveX509
             "-----END EC PRIVATE KEY-----\n";
 
     private static final int D2C_MESSAGE_TIMEOUT = 2000; // 2 seconds
-    private static List failedMessageListOnClose = new ArrayList(); // List of messages that failed on close
+    private static final List<String> failedMessageListOnClose = new ArrayList<>(); // List of messages that failed on close
 
     /** Used as a counter in the message callback. */
     protected static class Counter
@@ -123,18 +123,18 @@ public class SendReceiveX509
 
             if (status == IotHubConnectionStatus.DISCONNECTED)
             {
-                //connection was lost, and is not being re-established. Look at provided exception for
-                // how to resolve this issue. Cannot send messages until this issue is resolved, and you manually
-                // re-open the device client
+                System.out.println("The connection was lost, and is not being re-established." +
+                        " Look at provided exception for how to resolve this issue." +
+                        " Cannot send messages until this issue is resolved, and you manually re-open the device client");
             }
             else if (status == IotHubConnectionStatus.DISCONNECTED_RETRYING)
             {
-                //connection was lost, but is being re-established. Can still send messages, but they won't
-                // be sent until the connection is re-established
+                System.out.println("The connection was lost, but is being re-established." +
+                        " Can still send messages, but they won't be sent until the connection is re-established");
             }
             else if (status == IotHubConnectionStatus.CONNECTED)
             {
-                //Connection was successfully re-established. Can send messages.
+                System.out.println("The connection was successfully established. Can send messages.");
             }
         }
     }
@@ -240,8 +240,8 @@ public class SendReceiveX509
         System.out.println("Sending the following event messages: ");
 
         String deviceId = "MyJavaDevice";
-        double temperature = 0.0;
-        double humidity = 0.0;
+        double temperature;
+        double humidity;
 
         for (int i = 0; i < numRequests; ++i)
         {

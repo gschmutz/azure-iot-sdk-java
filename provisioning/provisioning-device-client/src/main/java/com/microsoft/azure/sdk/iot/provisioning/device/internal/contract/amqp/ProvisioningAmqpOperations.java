@@ -28,16 +28,16 @@ public class ProvisioningAmqpOperations extends AmqpDeviceOperations implements 
     private static final String API_VERSION_KEY = "com.microsoft:api-version";
     private static final String CLIENT_VERSION_IDENTIFIER_KEY = "com.microsoft:client-version";
 
-    private static final int MAX_WAIT_TO_SEND_MSG = 1*60*1000; // 1 minute timeout
-    private static final long MAX_WAIT_TO_OPEN_AMQP_CONNECTION = 1*60*1000; //1 minute timeout
+    private static final int MAX_WAIT_TO_SEND_MSG = 60 * 1000; // 1 minute timeout
+    private static final long MAX_WAIT_TO_OPEN_AMQP_CONNECTION = 60 * 1000; //1 minute timeout
 
     private AmqpsConnection amqpConnection;
     private final Queue<AmqpMessage> receivedMessages = new LinkedBlockingQueue<>();
     private final ObjectLock receiveLock = new ObjectLock();
 
     private Map<String, Object> messageAppProperties;
-    private String idScope;
-    private String hostName;
+    private final String idScope;
+    private final String hostName;
     private String messageSendFailedExceptionMessage;
 
     /**
@@ -310,27 +310,6 @@ public class ProvisioningAmqpOperations extends AmqpDeviceOperations implements 
     public Map<String, Object> getAmqpMessageProperties()
     {
         return this.messageAppProperties;
-    }
-
-    /**
-     * connectionEstablished Unused
-     */
-    public void connectionEstablished()
-    {
-    }
-
-    /**
-     * connectionLost Unused
-     */
-    public void connectionLost()
-    {
-    }
-
-    /**
-     * messageSent Unused
-     */
-    public void messageSent()
-    {
     }
 
     /**

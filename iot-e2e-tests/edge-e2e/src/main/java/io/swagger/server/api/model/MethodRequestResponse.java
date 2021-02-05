@@ -61,13 +61,11 @@ public class MethodRequestResponse   {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class MethodRequestResponse {\n");
-    
-    sb.append("    requestPayload: ").append(toIndentedString(requestPayload)).append("\n");
-    sb.append("    responseId: ").append(toIndentedString(responseId)).append("\n");
-    sb.append("}");
-    return sb.toString();
+
+      return "class MethodRequestResponse {\n" +
+              "    requestPayload: " + toIndentedString(requestPayload) + "\n" +
+              "    responseId: " + toIndentedString(responseId) + "\n" +
+              "}";
   }
 
   /**

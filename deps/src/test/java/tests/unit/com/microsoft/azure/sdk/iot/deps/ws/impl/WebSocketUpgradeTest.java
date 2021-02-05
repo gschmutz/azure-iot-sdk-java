@@ -24,7 +24,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.deps.ws.impl;
 import com.microsoft.azure.sdk.iot.deps.ws.impl.WebSocketUpgrade;
 import org.junit.Test;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
+import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.junit.Assert.*;
 
 public class WebSocketUpgradeTest
@@ -48,7 +49,7 @@ public class WebSocketUpgradeTest
         String webSocketProtocol = "subprotocol_name";
         String queryKey = "?iothub-no-client-cert=";
         String queryValue = "true";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -102,7 +103,7 @@ public class WebSocketUpgradeTest
                 String keyBase64 = line.substring(19);
                 if (keyBase64.length() == 24)
                 {
-                    byte[] decoded = Base64.decodeBase64Local(keyBase64.getBytes());
+                    byte[] decoded = decodeBase64(keyBase64.getBytes());
                     if (decoded.length == 16)
                     {
                         isWebSocketKeyHeaderOk = true;
@@ -211,7 +212,7 @@ public class WebSocketUpgradeTest
                 String keyBase64 = line.substring(19);
                 if (keyBase64.length() == 24)
                 {
-                    byte[] decoded = Base64.decodeBase64Local(keyBase64.getBytes());
+                    byte[] decoded = decodeBase64(keyBase64.getBytes());
                     if (decoded.length == 16)
                     {
                         isWebSocketKeyHeaderOk = true;
@@ -301,7 +302,7 @@ public class WebSocketUpgradeTest
                 String keyBase64 = line.substring(19);
                 if (keyBase64.length() == 24)
                 {
-                    byte[] decoded = Base64.decodeBase64Local(keyBase64.getBytes());
+                    byte[] decoded = decodeBase64(keyBase64.getBytes());
                     if (decoded.length == 16)
                     {
                         isWebSocketKeyHeaderOk = true;
@@ -344,7 +345,7 @@ public class WebSocketUpgradeTest
         String webSocketProtocol = "subprotocol_name";
         String queryKey = "?iothub-no-client-cert=";
         String queryValue = "true";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -396,7 +397,7 @@ public class WebSocketUpgradeTest
                 String keyBase64 = line.substring(19);
                 if (keyBase64.length() == 24)
                 {
-                    byte[] decoded = Base64.decodeBase64Local(keyBase64.getBytes());
+                    byte[] decoded = decodeBase64(keyBase64.getBytes());
                     if (decoded.length == 16)
                     {
                         isWebSocketKeyHeaderOk = true;
@@ -437,7 +438,7 @@ public class WebSocketUpgradeTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -453,7 +454,7 @@ public class WebSocketUpgradeTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -477,7 +478,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "HTTP/1.1 101 Switching Protocols\n" +
                     "Upgrade: websocket\n" +
@@ -490,7 +491,7 @@ public class WebSocketUpgradeTest
             assertTrue(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -511,7 +512,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "HTTP/1.1 101 Switching Protocols\n" +
                     "Upgrade: websocket\n" +
@@ -524,7 +525,7 @@ public class WebSocketUpgradeTest
             assertFalse(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -565,7 +566,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "Upgrade: websocket\n" +
                     "Server: XXXYYYZZZ\n" +
@@ -577,7 +578,7 @@ public class WebSocketUpgradeTest
             assertFalse(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -596,7 +597,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "HTTP/1.1 101 Switching Protocols\n" +
                     "Server: XXXYYYZZZ\n" +
@@ -608,7 +609,7 @@ public class WebSocketUpgradeTest
             assertFalse(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -627,7 +628,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "HTTP/1.1 101 Switching Protocols\n" +
                     "Upgrade: websocket\n" +
@@ -639,7 +640,7 @@ public class WebSocketUpgradeTest
             assertFalse(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -658,7 +659,7 @@ public class WebSocketUpgradeTest
         try
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            String serverKey = Base64.encodeBase64StringLocal(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
+            String serverKey = encodeBase64String(messageDigest.digest((keyBase64 + RFC_GUID).getBytes())).trim();
 
             String responseStr = "HTTP/1.1 101 Switching Protocols\n" +
                     "Upgrade: websocket\n" +
@@ -670,7 +671,7 @@ public class WebSocketUpgradeTest
             assertFalse(webSocketUpgrade.validateUpgradeReply(responseStr.getBytes()));
         } catch (NoSuchAlgorithmException e)
         {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -702,7 +703,7 @@ public class WebSocketUpgradeTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -721,7 +722,7 @@ public class WebSocketUpgradeTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -741,7 +742,7 @@ public class WebSocketUpgradeTest
 
         assertTrue(actual.startsWith(expexted1));
         actual = actual.substring(expexted1.length() + 24);
-        assertTrue(actual.equals(expected2));
+        assertEquals(actual, expected2);
     }
 
     @Test

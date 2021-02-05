@@ -13,16 +13,16 @@ import java.util.Map;
 public class ConfigurationContentParser
 {
     private static final String MODULES_CONTENT_NAME = "modulesContent";
-    @Expose(serialize = false, deserialize = true)
+    @Expose(serialize = false)
     @SerializedName(MODULES_CONTENT_NAME)
     private Map<String, Map<String, Object>> modulesContent;
 
     private static final String DEVICE_CONTENT_NAME = "deviceContent";
-    @Expose(serialize = false, deserialize = true)
+    @Expose(serialize = false)
     @SerializedName(DEVICE_CONTENT_NAME)
     private Map<String, Object> deviceContent;
 
-    private transient static Gson gson = new Gson();
+    private final transient static Gson gson = new Gson();
 
     /**
      * Empty constructor: Used only to keep GSON happy.

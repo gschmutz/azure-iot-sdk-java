@@ -11,13 +11,10 @@ import com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientT
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.SDKUtils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 public class UrlPathBuilder
 {
-    private String scope;
+    private final String scope;
     private ProvisioningDeviceClientTransportProtocol provisioningDeviceClientTransportProtocol;
     private StringBuilder url;
 
@@ -90,44 +87,36 @@ public class UrlPathBuilder
 
     private String generateRegisterUrlHttp(String registrationId)
     {
-        StringBuilder registerUrl = new StringBuilder(url);
 
-        registerUrl.append(registrationId);
-        registerUrl.append(SLASH);
-        registerUrl.append(REGISTER);
-        registerUrl.append(QUESTION);
-        registerUrl.append(API_VERSION_STRING);
-        registerUrl.append(EQUALS);
-        registerUrl.append(SDKUtils.getServiceApiVersion());
-
-        return registerUrl.toString();
+        return url + registrationId +
+                SLASH +
+                REGISTER +
+                QUESTION +
+                API_VERSION_STRING +
+                EQUALS +
+                SDKUtils.getServiceApiVersion();
     }
 
     private String generateRequestUrlHttp(String registrationId, String operationsId)
     {
-        StringBuilder requestUrl = new StringBuilder(url);
 
-        requestUrl.append(registrationId);
-        requestUrl.append(SLASH);
-        requestUrl.append(OPERATIONS);
-        requestUrl.append(SLASH);
-        requestUrl.append(operationsId);
-
-        requestUrl.append(QUESTION);
-        requestUrl.append(API_VERSION_STRING);
-        requestUrl.append(EQUALS);
-        requestUrl.append(SDKUtils.getServiceApiVersion());
-
-        return requestUrl.toString();
+        return url + registrationId +
+                SLASH +
+                OPERATIONS +
+                SLASH +
+                operationsId +
+                QUESTION +
+                API_VERSION_STRING +
+                EQUALS +
+                SDKUtils.getServiceApiVersion();
     }
 
     /**
      * Generates URL Encoded SAS Token
      * @param registrationId Id for the registration. Cannot be {@code null} or empty
      * @return A string of format
-     * @throws UnsupportedEncodingException if the string could not be encoded.
      */
-    public String generateSasTokenUrl(String registrationId) throws UnsupportedEncodingException
+    public String generateSasTokenUrl(String registrationId)
     {
         //SRS_UrlPathBuilder_25_005: [ This method shall throw IllegalArgumentException if the registration id is null or empty. ]
         if (registrationId == null || registrationId.isEmpty())
@@ -135,13 +124,11 @@ public class UrlPathBuilder
             throw new IllegalArgumentException("registration id cannot be null or empty");
         }
         //SRS_UrlPathBuilder_25_006: [ This method shall create a String using the following format after Url Encoding: <scope>/registrations/<registrationId> ]
-        StringBuilder sasTokenUrl = new StringBuilder();
-        sasTokenUrl.append(scope);
-        sasTokenUrl.append(SLASH);
-        sasTokenUrl.append(REGISTRATIONS);
-        sasTokenUrl.append(SLASH);
-        sasTokenUrl.append(registrationId);
-        return URLEncoder.encode(sasTokenUrl.toString(), StandardCharsets.UTF_8.displayName());
+        return scope +
+                SLASH +
+                REGISTRATIONS +
+                SLASH +
+                registrationId;
     }
 
     /**
@@ -166,8 +153,6 @@ public class UrlPathBuilder
 
             case MQTT:
             case MQTT_WS:
-                return null;
-
             case AMQPS:
             case AMQPS_WS:
                 return null;
@@ -205,8 +190,6 @@ public class UrlPathBuilder
 
             case MQTT:
             case MQTT_WS:
-                return null;
-
             case AMQPS:
             case AMQPS_WS:
                 return null;

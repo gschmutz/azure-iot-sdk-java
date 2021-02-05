@@ -48,6 +48,8 @@ public class RegistryManager
      *
      * @deprecated As of release 1.22.0, replaced by {@link #createFromConnectionString(String)}
      */
+    // Suppressing warning since it is referenced by createFromConnectionString
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public RegistryManager()
     {
@@ -170,9 +172,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_011: [The function shall create a new Device object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Device iotHubDevice = new Device(new DeviceParser(bodyStr));
-
-        return iotHubDevice;
+        return new Device(new DeviceParser(bodyStr));
     }
 
     /**
@@ -241,8 +241,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_020: [The function shall create a new Device object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Device iotHubDevice = new Device(new DeviceParser(bodyStr));
-        return iotHubDevice;
+        return new Device(new DeviceParser(bodyStr));
     }
 
     /**
@@ -422,6 +421,7 @@ public class RegistryManager
 
     /**
      * Update device with forceUpdate input parameter
+     * @deprecated The forceUpdate argument does nothing so this method will always behave the same as {@link #updateDevice(Device)}
      *
      * @param device The device object containing updated data
      * @param forceUpdate True if the update has to be forced regardless of the device state
@@ -429,6 +429,8 @@ public class RegistryManager
      * @throws IOException This exception is thrown if the IO operation failed
      * @throws IotHubException This exception is thrown if the response verification failed
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     public Device updateDevice(Device device, Boolean forceUpdate) throws IOException, IotHubException, JsonSyntaxException
     {
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_034: [The function shall throw IllegalArgumentException if the input device is null]
@@ -437,7 +439,6 @@ public class RegistryManager
             throw new IllegalArgumentException("device cannot be null");
         }
 
-        // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_035: [The function shall set forceUpdate on the device]
         device.setForceUpdate(forceUpdate);
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_036: [The function shall get the URL for the device]
@@ -457,9 +458,8 @@ public class RegistryManager
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_041: [The function shall create a new Device object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
-        Device iotHubDevice = new Device(new DeviceParser(bodyStr));
 
-        return iotHubDevice;
+        return new Device(new DeviceParser(bodyStr));
     }
 
     /**
@@ -496,6 +496,7 @@ public class RegistryManager
 
     /**
      * Async wrapper for forced updateDevice() operation
+     * @deprecated The forceUpdate argument does nothing so this method will always behave the same as {@link #updateDeviceAsync(Device)}
      *
      * @param device The device object containing updated data
      * @param forceUpdate True is the update has to be forced regardless if the device state
@@ -503,6 +504,7 @@ public class RegistryManager
      * @throws IOException This exception is thrown if the IO operation failed
      * @throws IotHubException This exception is thrown if the response verification failed
      */
+    @Deprecated
     public CompletableFuture<Device> updateDeviceAsync(Device device, Boolean forceUpdate) throws IOException, IotHubException
     {
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_044: [The function shall throw IllegalArgumentException if the input device is null]
@@ -617,7 +619,7 @@ public class RegistryManager
         }
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_053: [The function shall create an async wrapper around the removeDevice() function call, handle the return value or delegate exception]
-        final CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
         executor.submit(() ->
         {
             try
@@ -659,8 +661,7 @@ public class RegistryManager
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_059: [The function shall create a new RegistryStatistics object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
-        RegistryStatistics registryStatistics = new RegistryStatistics(new RegistryStatisticsParser(bodyStr));
-        return registryStatistics;
+        return new RegistryStatistics(new RegistryStatisticsParser(bodyStr));
     }
 
     /**
@@ -1081,9 +1082,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_008: [The function shall create a new Module object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Module iotHubModule = new Module(new DeviceParser(bodyStr));
-
-        return iotHubModule;
+        return new Module(new DeviceParser(bodyStr));
     }
 
     /**
@@ -1126,8 +1125,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_016: [The function shall create a new Device object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Module iotHubModule = new Module(new DeviceParser(bodyStr));
-        return iotHubModule;
+        return new Module(new DeviceParser(bodyStr));
     }
 
     /**
@@ -1198,6 +1196,7 @@ public class RegistryManager
 
     /**
      * Update module with forceUpdate input parameter
+     * @deprecated The forceUpdate argument does nothing so this method will always behave the same as @link #updateModule(Module)}
      *
      * @param module The module object containing updated data
      * @param forceUpdate True if the update has to be forced regardless of the module state
@@ -1205,6 +1204,8 @@ public class RegistryManager
      * @throws IOException This exception is thrown if the IO operation failed
      * @throws IotHubException This exception is thrown if the response verification failed
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")   
+    @Deprecated
     public Module updateModule(Module module, Boolean forceUpdate) throws IOException, IotHubException, JsonSyntaxException
     {
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_026: [The function shall throw IllegalArgumentException if the input module is null]
@@ -1213,7 +1214,6 @@ public class RegistryManager
             throw new IllegalArgumentException("module cannot be null");
         }
 
-        // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_027: [The function shall set forceUpdate on the module]
         module.setForceUpdate(forceUpdate);
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_028: [The function shall get the URL for the module]
@@ -1233,9 +1233,8 @@ public class RegistryManager
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_033: [The function shall create a new Module object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
-        Module iotHubModule = new Module(new DeviceParser(bodyStr));
 
-        return iotHubModule;
+        return new Module(new DeviceParser(bodyStr));
     }
 
     /**
@@ -1355,9 +1354,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_048: [The function shall create a new Configuration object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Configuration iotHubConfiguration = new Configuration(new ConfigurationParser(bodyStr));
-
-        return iotHubConfiguration;
+        return new Configuration(new ConfigurationParser(bodyStr));
     }
 
     /**
@@ -1393,8 +1390,7 @@ public class RegistryManager
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_055: [The function shall create a new Device object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
 
-        Configuration iotHubConfiguration = new Configuration(new ConfigurationParser(bodyStr));
-        return iotHubConfiguration;
+        return new Configuration(new ConfigurationParser(bodyStr));
     }
 
     /**
@@ -1465,6 +1461,7 @@ public class RegistryManager
 
     /**
      * Update configuration with forceUpdate input parameter
+     * @deprecated the forceUpdate argument does nothing so this method will always behave the same as @link #updateConfiguration(Configuration)}
      *
      * @param configuration The configuration object containing updated data
      * @param forceUpdate True if the update has to be forced regardless of the configuration state
@@ -1472,6 +1469,8 @@ public class RegistryManager
      * @throws IOException This exception is thrown if the IO operation failed
      * @throws IotHubException This exception is thrown if the response verification failed
      */
+    @SuppressWarnings("DeprecatedIsStillUsed")   
+    @Deprecated
     public Configuration updateConfiguration(Configuration configuration, Boolean forceUpdate) throws IOException, IotHubException, JsonSyntaxException
     {
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_065: [The function shall throw IllegalArgumentException if the input configuration is null]
@@ -1480,7 +1479,6 @@ public class RegistryManager
             throw new IllegalArgumentException("configuration cannot be null");
         }
 
-        // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_066: [The function shall set forceUpdate on the configuration]
         configuration.setForceUpdate(forceUpdate);
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_067: [The function shall get the URL for the configuration]
@@ -1500,9 +1498,8 @@ public class RegistryManager
 
         // Codes_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_072: [The function shall create a new Configuration object from the response and return with it]
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
-        Configuration iotHubConfiguration = new Configuration(new ConfigurationParser(bodyStr));
 
-        return iotHubConfiguration;
+        return new Configuration(new ConfigurationParser(bodyStr));
     }
 
     /**
@@ -1627,8 +1624,7 @@ public class RegistryManager
     private JobProperties ProcessJobResponse(HttpResponse response) throws IotHubException, JsonSyntaxException {
         IotHubExceptionManager.httpResponseVerification(response);
         String bodyStr = new String(response.getBody(), StandardCharsets.UTF_8);
-        JobProperties resultJobProperties = new JobProperties(new JobPropertiesParser(bodyStr));
-        return resultJobProperties;
+        return new JobProperties(new JobPropertiesParser(bodyStr));
     }
 
     private HttpRequest CreateRequest(URL url, HttpMethod method, byte[] payload, String sasToken) throws IOException

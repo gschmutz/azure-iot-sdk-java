@@ -7,7 +7,6 @@
 
 package samples.com.microsoft.azure.sdk.iot;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.device.*;
 import com.microsoft.azure.sdk.iot.provisioning.device.*;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceClientException;
@@ -18,9 +17,12 @@ import com.microsoft.azure.sdk.iot.provisioning.security.hsm.SecurityProviderTPM
 import java.io.IOException;
 import java.util.Scanner;
 
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
+
 /**
  * TPM sample
  */
+@SuppressWarnings("CommentedOutCode") // Ignored in samples as we use these comments to show other options.
 public class ProvisioningTpmSample
 {
     private static final String SCOPE_ID = "[Your scope ID here]";
@@ -76,7 +78,7 @@ public class ProvisioningTpmSample
         try
         {
             securityClientTPMEmulator = new SecurityProviderTPMEmulator();
-            System.out.println("Endorsement Key : \n" + new String(Base64.encodeBase64Local(securityClientTPMEmulator.getEndorsementKey())));
+            System.out.println("Endorsement Key : \n" + new String(encodeBase64(securityClientTPMEmulator.getEndorsementKey())));
             System.out.println("Registration Id : \n" + securityClientTPMEmulator.getRegistrationId());
             System.out.println("Please visit Azure Portal (https://portal.azure.com/) and create a TPM Individual Enrollment with the information above i.e EndorsementKey and RegistrationId \n" +
                                        "Press enter when you are ready to run registration after enrolling with the service");

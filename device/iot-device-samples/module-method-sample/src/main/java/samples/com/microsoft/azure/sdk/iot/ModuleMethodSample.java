@@ -5,11 +5,8 @@ package samples.com.microsoft.azure.sdk.iot;
 
 import com.microsoft.azure.sdk.iot.device.*;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.DeviceMethodData;
-import com.microsoft.azure.sdk.iot.device.exceptions.ModuleClientException;
 import com.microsoft.azure.sdk.iot.device.transport.IotHubConnectionStatus;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Scanner;
 
 /**
@@ -18,12 +15,12 @@ import java.util.Scanner;
  */
 public class ModuleMethodSample
 {
-    private static String SAMPLE_USAGE = "The program should be called with the following args: \n"
+    private static final String SAMPLE_USAGE = "The program should be called with the following args: \n"
             + "1. [Device connection string] - String containing Hostname, Device Id, Module Id & Device Key in one of the following formats: HostName=<iothub_host_name>;deviceId=<device_id>;SharedAccessKey=<device_key>;moduleId=<module_id>\n"
             + "2. (mqtt | amqps | amqps_ws | mqtt_ws)\n";
 
-    private static String SAMPLE_USAGE_WITH_WRONG_ARGS = "Expected 2 or 3 arguments but received: %d.\n" + SAMPLE_USAGE;
-    private static String SAMPLE_USAGE_WITH_INVALID_PROTOCOL = "Expected argument 2 to be one of 'mqtt', 'amqps' or 'amqps_ws' but received %s\n" + SAMPLE_USAGE;
+    private static final String SAMPLE_USAGE_WITH_WRONG_ARGS = "Expected 2 or 3 arguments but received: %d.\n" + SAMPLE_USAGE;
+    private static final String SAMPLE_USAGE_WITH_INVALID_PROTOCOL = "Expected argument 2 to be one of 'mqtt', 'amqps' or 'amqps_ws' but received %s\n" + SAMPLE_USAGE;
     private static final int METHOD_SUCCESS = 200;
     private static final int METHOD_NOT_DEFINED = 404;
 
@@ -55,21 +52,13 @@ public class ModuleMethodSample
         public DeviceMethodData call(String methodName, Object methodData, Object context)
         {
             DeviceMethodData deviceMethodData ;
-            switch (methodName)
+            int status = method_default(methodData);
+            if ("command".equals(methodName))
             {
-                case "command" :
-                {
-                    int status = method_command(methodData);
-
-                    deviceMethodData = new DeviceMethodData(status, "executed " + methodName);
-                    break;
-                }
-                default:
-                {
-                    int status = method_default(methodData);
-                    deviceMethodData = new DeviceMethodData(status, "executed " + methodName);
-                }
+                status = method_command(methodData);
             }
+
+            deviceMethodData = new DeviceMethodData(status, "executed " + methodName);
 
             return deviceMethodData;
         }
@@ -93,18 +82,18 @@ public class ModuleMethodSample
 
             if (status == IotHubConnectionStatus.DISCONNECTED)
             {
-                //connection was lost, and is not being re-established. Look at provided exception for
-                // how to resolve this issue. Cannot send messages until this issue is resolved, and you manually
-                // re-open the device client
+                System.out.println("The connection was lost, and is not being re-established." +
+                        " Look at provided exception for how to resolve this issue." +
+                        " Cannot send messages until this issue is resolved, and you manually re-open the device client");
             }
             else if (status == IotHubConnectionStatus.DISCONNECTED_RETRYING)
             {
-                //connection was lost, but is being re-established. Can still send messages, but they won't
-                // be sent until the connection is re-established
+                System.out.println("The connection was lost, but is being re-established." +
+                        " Can still send messages, but they won't be sent until the connection is re-established");
             }
             else if (status == IotHubConnectionStatus.CONNECTED)
             {
-                //Connection was successfully re-established. Can send messages.
+                System.out.println("The connection was successfully established. Can send messages.");
             }
         }
     }

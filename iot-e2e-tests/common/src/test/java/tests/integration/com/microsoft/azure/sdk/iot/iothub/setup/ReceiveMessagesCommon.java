@@ -12,7 +12,6 @@ import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.runners.Parameterized;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.Tools;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.*;
@@ -25,7 +24,6 @@ import java.util.*;
 import static com.microsoft.azure.sdk.iot.device.IotHubClientProtocol.*;
 import static com.microsoft.azure.sdk.iot.service.auth.AuthenticationType.SAS;
 import static com.microsoft.azure.sdk.iot.service.auth.AuthenticationType.SELF_SIGNED;
-import static org.junit.Assert.fail;
 import static tests.integration.com.microsoft.azure.sdk.iot.helpers.CorrelationDetailsLoggingAssert.buildExceptionMessage;
 
 /**
@@ -51,8 +49,7 @@ public class ReceiveMessagesCommon extends IntegrationTest
         messageProperties.put("name2", "value2");
         messageProperties.put("name3", "value3");
 
-        List inputs = new ArrayList();
-        inputs.addAll(Arrays.asList(
+        List inputs = new ArrayList(Arrays.asList(
                 new Object[][]
                         {
                                 //sas token module client
@@ -104,7 +101,7 @@ public class ReceiveMessagesCommon extends IntegrationTest
 
     protected static String expectedCorrelationId = "1234";
     protected static String expectedMessageId = "5678";
-    protected static final long ERROR_INJECTION_RECOVERY_TIMEOUT_MILLISECONDS = 1 * 60 * 1000; // 1 minute
+    protected static final long ERROR_INJECTION_RECOVERY_TIMEOUT_MILLISECONDS = 60 * 1000; // 1 minute
 
     public ReceiveMessagesTestInstance testInstance;
 
@@ -244,7 +241,7 @@ public class ReceiveMessagesCommon extends IntegrationTest
 
     public static class MessageCallbackForBackToBackC2DMessages implements com.microsoft.azure.sdk.iot.device.MessageCallback
     {
-        private List messageIdListStoredOnReceive;
+        private final List messageIdListStoredOnReceive;
 
         public MessageCallbackForBackToBackC2DMessages(List messageIdListStoredOnReceive)
         {
@@ -276,7 +273,7 @@ public class ReceiveMessagesCommon extends IntegrationTest
         }
     }
 
-    public class MessageCallbackMqtt implements com.microsoft.azure.sdk.iot.device.MessageCallback
+    public static class MessageCallbackMqtt implements com.microsoft.azure.sdk.iot.device.MessageCallback
     {
         public IotHubMessageResult execute(com.microsoft.azure.sdk.iot.device.Message msg, Object context)
         {
@@ -313,13 +310,7 @@ public class ReceiveMessagesCommon extends IntegrationTest
             return false;
         }
 
-        if (msg.getMessageId() == null || !msg.getMessageId().equals(expectedMessageId))
-        {
-            return false;
-        }
-
-        //all system properties are as expected
-        return true;
+        return msg.getMessageId() != null && msg.getMessageId().equals(expectedMessageId);//all system properties are as expected
     }
 
     protected void sendMessageToDevice(String deviceId, String protocolName) throws IotHubException, IOException

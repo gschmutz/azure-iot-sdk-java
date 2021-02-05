@@ -166,7 +166,7 @@ public class Tools
     public static long getNumberValueFromJsonObject(JsonObject jsonObject, String key)
     {
         long retVal;
-        JsonNumber jsonNumber = null;
+        JsonNumber jsonNumber;
         // Codes_SRS_SERVICE_SDK_JAVA_TOOLS_12_018: [The function shall return zero if any of the input is null]
         if ((jsonObject == null) || (jsonObject == JsonObject.NULL) || (key == null) || (key.length() == 0))
         {
@@ -215,11 +215,10 @@ public class Tools
             // Codes_SRS_SERVICE_SDK_JAVA_TOOLS_12_023: [The function shall append the input StringBuilder string using the following format: "name":"value" if isQuoted is false]
             strBuilder.append("\"");
 
-            if (Tools.isNullOrEmpty(name))
-                strBuilder.append("");
-            else
+            if (!Tools.isNullOrEmpty(name))
+            {
                 strBuilder.append(name);
-
+            }
             strBuilder.append("\"");
             strBuilder.append(":");
 

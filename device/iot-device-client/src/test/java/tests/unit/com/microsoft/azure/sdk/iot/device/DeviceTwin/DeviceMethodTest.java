@@ -5,7 +5,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.device.DeviceTwin;
 
 import com.microsoft.azure.sdk.iot.device.*;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.*;
-import com.microsoft.azure.sdk.iot.device.transport.IotHubTransport;
 import com.microsoft.azure.sdk.iot.device.transport.IotHubTransportMessage;
 import mockit.Deencapsulation;
 import mockit.Mocked;
@@ -236,7 +235,7 @@ public class DeviceMethodTest
             }
         };
 
-        assertTrue(result == IotHubMessageResult.COMPLETE);
+        assertSame(result, IotHubMessageResult.COMPLETE);
     }
 
     /*
@@ -268,7 +267,7 @@ public class DeviceMethodTest
         IotHubMessageResult result =  testDeviceMethodResponseMessageCallback.execute(testMessage, null);
 
         //assert
-        assertFalse(result == IotHubMessageResult.COMPLETE);
+        assertNotSame(result, IotHubMessageResult.COMPLETE);
 
         new Verifications()
         {
@@ -307,7 +306,7 @@ public class DeviceMethodTest
         IotHubMessageResult result =  testDeviceMethodResponseMessageCallback.execute(testMessage, null);
 
         //assert
-        assertFalse(result == IotHubMessageResult.COMPLETE);
+        assertNotSame(result, IotHubMessageResult.COMPLETE);
 
         new Verifications()
         {
@@ -348,7 +347,7 @@ public class DeviceMethodTest
         IotHubMessageResult result =  testDeviceMethodResponseMessageCallback.execute(testMessage, null);
 
         //assert
-        assertTrue(result == IotHubMessageResult.COMPLETE);
+        assertSame(result, IotHubMessageResult.COMPLETE);
 
         new Verifications()
         {
@@ -384,7 +383,7 @@ public class DeviceMethodTest
         IotHubMessageResult result =  testDeviceMethodResponseMessageCallback.execute(testMessage, null);
 
         //assert
-        assertFalse(result == IotHubMessageResult.COMPLETE);
+        assertNotSame(result, IotHubMessageResult.COMPLETE);
 
         new Verifications()
         {

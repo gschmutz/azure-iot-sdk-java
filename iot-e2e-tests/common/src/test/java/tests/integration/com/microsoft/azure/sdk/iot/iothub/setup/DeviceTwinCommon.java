@@ -7,35 +7,56 @@ package tests.integration.com.microsoft.azure.sdk.iot.iothub.setup;
 
 import com.google.gson.JsonParser;
 import com.microsoft.azure.sdk.iot.deps.twin.TwinConnectionState;
-import com.microsoft.azure.sdk.iot.device.*;
+import com.microsoft.azure.sdk.iot.device.DeviceClient;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.Device;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.Property;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.TwinPropertyCallBack;
+import com.microsoft.azure.sdk.iot.device.InternalClient;
+import com.microsoft.azure.sdk.iot.device.IotHubClientProtocol;
+import com.microsoft.azure.sdk.iot.device.IotHubConnectionStatusChangeCallback;
+import com.microsoft.azure.sdk.iot.device.IotHubEventCallback;
+import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
+import com.microsoft.azure.sdk.iot.device.ModuleClient;
 import com.microsoft.azure.sdk.iot.device.exceptions.ModuleClientException;
 import com.microsoft.azure.sdk.iot.device.transport.IotHubConnectionStatus;
 import com.microsoft.azure.sdk.iot.service.RegistryManager;
 import com.microsoft.azure.sdk.iot.service.RegistryManagerOptions;
 import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;
-import com.microsoft.azure.sdk.iot.service.devicetwin.*;
+import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwin;
+import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinClientOptions;
+import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
+import com.microsoft.azure.sdk.iot.service.devicetwin.Pair;
+import com.microsoft.azure.sdk.iot.service.devicetwin.RawTwinQuery;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runners.Parameterized;
-import tests.integration.com.microsoft.azure.sdk.iot.helpers.*;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.ClientType;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.DeviceConnectionString;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.IntegrationTest;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.SSLContextBuilder;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.TestConstants;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.Tools;
+import tests.integration.com.microsoft.azure.sdk.iot.helpers.X509CertificateGenerator;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.microsoft.azure.sdk.iot.device.IotHubClientProtocol.*;
 import static com.microsoft.azure.sdk.iot.device.IotHubStatusCode.OK;
 import static com.microsoft.azure.sdk.iot.device.IotHubStatusCode.OK_EMPTY;
 import static com.microsoft.azure.sdk.iot.service.auth.AuthenticationType.SAS;
 import static com.microsoft.azure.sdk.iot.service.auth.AuthenticationType.SELF_SIGNED;
-import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
 import static tests.integration.com.microsoft.azure.sdk.iot.helpers.CorrelationDetailsLoggingAssert.buildExceptionMessage;
 
@@ -101,6 +122,7 @@ public class DeviceTwinCommon extends IntegrationTest
     protected static final long DELAY_BETWEEN_OPERATIONS = 200; // 0.2 sec
     protected static final long REPORTED_PROPERTIES_PROPAGATION_DELAY_MILLISECONDS = 2000; // 2 seconds
     public static final long MULTITHREADED_WAIT_TIMEOUT_MILLISECONDS = 60 * 1000; // 1 minute
+    public static final long START_TWIN_TIMEOUT_MILLISECONDS = 30 * 1000; // 30 seconds
 
     public static final long DESIRED_PROPERTIES_PROPAGATION_TIME_MILLISECONDS = 5 * 1000; //5 seconds
 
@@ -143,7 +165,7 @@ public class DeviceTwinCommon extends IntegrationTest
     protected DeviceState[] devicesUnderTest;
 
     protected DeviceTwinTestInstance testInstance;
-    protected static final long ERROR_INJECTION_WAIT_TIMEOUT_MILLISECONDS = 1 * 60 * 1000; // 1 minute
+    protected static final long ERROR_INJECTION_WAIT_TIMEOUT_MILLISECONDS = 60 * 1000; // 1 minute
 
     //How many milliseconds between retry
     protected static final Integer RETRY_MILLISECONDS = 100;
@@ -179,7 +201,7 @@ public class DeviceTwinCommon extends IntegrationTest
         public IotHubStatusCode deviceTwinStatus;
     }
 
-    public class PropertyState
+    public static class PropertyState
     {
         public boolean callBackTriggered;
         public Property property;
@@ -272,6 +294,7 @@ public class DeviceTwinCommon extends IntegrationTest
         }
     }
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method "numberOfDevices" can be passed any value.
     protected void addMultipleDevices(int numberOfDevices) throws IOException, InterruptedException, IotHubException, GeneralSecurityException, URISyntaxException, ModuleClientException
     {
         addMultipleDevices(numberOfDevices, true);
@@ -409,7 +432,7 @@ public class DeviceTwinCommon extends IntegrationTest
         this.testInstance = new DeviceTwinTestInstance(protocol, authenticationType, clientType, publicKeyCert, privateKey, x509Thumbprint);
     }
 
-    public class DeviceTwinTestInstance
+    public static class DeviceTwinTestInstance
     {
         public IotHubClientProtocol protocol;
         public AuthenticationType authenticationType;
@@ -463,7 +486,6 @@ public class DeviceTwinCommon extends IntegrationTest
             deviceUnderTest.sCDeviceForRegistryManager.setThumbprintFinal(testInstance.x509Thumbprint, testInstance.x509Thumbprint);
         }
 
-
         deviceUnderTest.sCDeviceForRegistryManager = Tools.addDeviceWithRetry(testInstance.registryManager, deviceUnderTest.sCDeviceForRegistryManager);
 
         if (deviceUnderTest.sCModuleForRegistryManager != null)
@@ -490,7 +512,7 @@ public class DeviceTwinCommon extends IntegrationTest
         }
     }
 
-    protected void readReportedPropertiesAndVerify(DeviceState deviceState, String startsWithKey, String startsWithValue, int expectedReportedPropCount) throws IOException, IotHubException, InterruptedException
+    protected void readReportedPropertiesAndVerify(DeviceState deviceState, String startsWithValue, int expectedReportedPropCount) throws IOException, IotHubException, InterruptedException
     {
         int actualCount = 0;
 
@@ -513,7 +535,7 @@ public class DeviceTwinCommon extends IntegrationTest
             for (Pair p : repProperties)
             {
                 String val = (String) p.getValue();
-                if (p.getKey().startsWith(startsWithKey) && val.startsWith(startsWithValue))
+                if (p.getKey().startsWith(DeviceTwinCommon.PROPERTY_KEY) && val.startsWith(startsWithValue))
                 {
                     actualCount++;
                 }
@@ -559,7 +581,7 @@ public class DeviceTwinCommon extends IntegrationTest
     {
         // Check status periodically for success or until timeout
         long startTime = System.currentTimeMillis();
-        long timeElapsed = 0;
+        long timeElapsed;
         while (deviceUnderTest.deviceTwinStatus != OK)
         {
             Thread.sleep(PERIODIC_WAIT_TIME_FOR_VERIFICATION);
@@ -582,9 +604,10 @@ public class DeviceTwinCommon extends IntegrationTest
         // Assert
         waitAndVerifyTwinStatusBecomesSuccess();
         // verify if they are received by SC
-        readReportedPropertiesAndVerify(deviceUnderTest, PROPERTY_KEY, PROPERTY_VALUE, numOfProp);
+        readReportedPropertiesAndVerify(deviceUnderTest, PROPERTY_VALUE, numOfProp);
     }
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method "numOfProp" can be passed any value.
     protected void sendReportedArrayPropertiesAndVerify(int numOfProp) throws IOException, IotHubException, InterruptedException
     {
         // Act
@@ -602,7 +625,7 @@ public class DeviceTwinCommon extends IntegrationTest
     {
         // Check status periodically for success or until timeout
         long startTime = System.currentTimeMillis();
-        long timeElapsed = 0;
+        long timeElapsed;
 
         for (int i = 0; i < deviceUnderTest.dCDeviceForTwin.propertyStateList.length; i++)
         {
@@ -683,14 +706,7 @@ public class DeviceTwinCommon extends IntegrationTest
 
     protected void setConnectionStatusCallBack(final List<com.microsoft.azure.sdk.iot.device.DeviceTwin.Pair<IotHubConnectionStatus, Throwable>> actualStatusUpdates)
     {
-        IotHubConnectionStatusChangeCallback connectionStatusUpdateCallback = new IotHubConnectionStatusChangeCallback()
-        {
-            @Override
-            public void execute(IotHubConnectionStatus status, IotHubConnectionStatusChangeReason statusChangeReason, Throwable throwable, Object callbackContext)
-            {
-                actualStatusUpdates.add(new com.microsoft.azure.sdk.iot.device.DeviceTwin.Pair<>(status, throwable));
-            }
-        };
+        IotHubConnectionStatusChangeCallback connectionStatusUpdateCallback = (status, statusChangeReason, throwable, callbackContext) -> actualStatusUpdates.add(new com.microsoft.azure.sdk.iot.device.DeviceTwin.Pair<>(status, throwable));
 
         this.internalClient.registerConnectionStatusChangeCallback(connectionStatusUpdateCallback, null);
     }
@@ -704,7 +720,7 @@ public class DeviceTwinCommon extends IntegrationTest
             PropertyState propertyState = new PropertyState();
             propertyState.property = new Property(PROPERTY_KEY + i, PROPERTY_VALUE);
             deviceUnderTest.dCDeviceForTwin.propertyStateList[i] = propertyState;
-            desiredPropertiesCB.put(propertyState.property, new com.microsoft.azure.sdk.iot.device.DeviceTwin.Pair<TwinPropertyCallBack, Object>(deviceUnderTest.dCOnProperty, propertyState));
+            desiredPropertiesCB.put(propertyState.property, new com.microsoft.azure.sdk.iot.device.DeviceTwin.Pair<>(deviceUnderTest.dCOnProperty, propertyState));
         }
         internalClient.subscribeToTwinDesiredProperties(desiredPropertiesCB);
         Thread.sleep(DELAY_BETWEEN_OPERATIONS);

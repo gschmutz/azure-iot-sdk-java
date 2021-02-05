@@ -8,12 +8,10 @@
 package tests.unit.com.microsoft.azure.sdk.iot.provisioning.device.internal.contract.mqtt;
 
 import com.microsoft.azure.sdk.iot.deps.transport.mqtt.MqttConnection;
-import com.microsoft.azure.sdk.iot.deps.transport.mqtt.MqttListener;
 import com.microsoft.azure.sdk.iot.deps.transport.mqtt.MqttMessage;
 import com.microsoft.azure.sdk.iot.deps.transport.mqtt.MqttQos;
 import com.microsoft.azure.sdk.iot.deps.util.ObjectLock;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.ProvisioningDeviceClientConfig;
-import com.microsoft.azure.sdk.iot.provisioning.device.internal.SDKUtils;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.contract.ResponseCallback;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.contract.mqtt.ContractAPIMqtt;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceClientException;
@@ -72,9 +70,6 @@ public class ContractAPIMqttTest
 
     @Mocked
     Map<String, Object> mockedHashMap;
-
-    //@Mocked
-    //Queue<MqttMessage> mockedQueue;
 
     @Mocked
     MqttMessage mockedMqttMessage;

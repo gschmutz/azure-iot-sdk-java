@@ -8,6 +8,7 @@ package com.microsoft.azure.sdk.iot.device;
 
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.DeviceMethodCallback;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.PropertyCallBack;
+import com.microsoft.azure.sdk.iot.device.DeviceTwin.TwinPropertiesCallback;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.TwinPropertyCallBack;
 import com.microsoft.azure.sdk.iot.device.auth.IotHubAuthenticationProvider;
 import com.microsoft.azure.sdk.iot.device.auth.SignatureProvider;
@@ -38,14 +39,14 @@ public class ModuleClient extends InternalClient
 {
     private static final String DEFAULT_API_VERSION = "2018-06-28";
 
-    private static long SEND_PERIOD_MILLIS = 10;
+    private static final long SEND_PERIOD_MILLIS = 10;
 
-    private static long RECEIVE_PERIOD_MILLIS_AMQPS = 10;
-    private static long RECEIVE_PERIOD_MILLIS_MQTT = 10;
-    private static long RECEIVE_PERIOD_MILLIS_HTTPS = 25 * 60 * 1000; /*25 minutes*/
+    private static final long RECEIVE_PERIOD_MILLIS_AMQPS = 10;
+    private static final long RECEIVE_PERIOD_MILLIS_MQTT = 10;
+    private static final long RECEIVE_PERIOD_MILLIS_HTTPS = 25 * 60 * 1000; /*25 minutes*/
 
-    private static int DEFAULT_SAS_TOKEN_TIME_TO_LIVE_SECONDS = 60 * 60; //1 hour
-    private static int DEFAULT_SAS_TOKEN_BUFFER_PERCENTAGE = 85; //Token will go 85% of its life before renewing
+    private static final int DEFAULT_SAS_TOKEN_TIME_TO_LIVE_SECONDS = 60 * 60; //1 hour
+    private static final int DEFAULT_SAS_TOKEN_BUFFER_PERCENTAGE = 85; //Token will go 85% of its life before renewing
 
     private static final String IotEdgedUriVariableName = "IOTEDGE_WORKLOADURI";
     private static final String IotHubHostnameVariableName = "IOTEDGE_IOTHUBHOSTNAME";
@@ -176,6 +177,40 @@ public class ModuleClient extends InternalClient
     }
 
     /**
+     * Constructor that allows for the client's SAS token generation to be controlled by the user. Note that options in
+     * this client such as setting the SAS token expiry time will throw {@link UnsupportedOperationException} since
+     * the SDK no longer controls that when this constructor is used.
+     *
+     * @param hostName The host name of the IoT Hub that this client will connect to.
+     * @param deviceId The Id of the device containing the module that the connection will identify as.
+     * @param moduleId The Id of the module that the connection will identify as.
+     * @param sasTokenProvider The provider of all SAS tokens that are used during authentication.
+     * @param protocol The protocol that the client will connect over.
+     */
+    public ModuleClient(String hostName, String deviceId, String moduleId, SasTokenProvider sasTokenProvider, IotHubClientProtocol protocol)
+    {
+        this(hostName, deviceId, moduleId, sasTokenProvider, protocol, null);
+    }
+
+    /**
+     * Constructor that allows for the client's SAS token generation to be controlled by the user. Note that options in
+     * this client such as setting the SAS token expiry time will throw {@link UnsupportedOperationException} since
+     * the SDK no longer controls that when this constructor is used.
+     *
+     * @param hostName The host name of the IoT Hub that this client will connect to.
+     * @param deviceId The Id of the device containing the module that the connection will identify as.
+     * @param moduleId The Id of the module that the connection will identify as.
+     * @param sasTokenProvider The provider of all SAS tokens that are used during authentication.
+     * @param protocol The protocol that the client will connect over.
+     * @param clientOptions The options that allow configuration of the module client instance during initialization.
+     */
+    public ModuleClient(String hostName, String deviceId, String moduleId, SasTokenProvider sasTokenProvider, IotHubClientProtocol protocol, ClientOptions clientOptions)
+    {
+        super(hostName, deviceId, moduleId, sasTokenProvider, protocol, clientOptions, SEND_PERIOD_MILLIS, getReceivePeriod(protocol));
+        commonConstructorVerifications(protocol, this.getConfig());
+    }
+
+    /**
      * Create a module client instance from your environment variables
      * @return the created module client instance
      * @throws ModuleClientException if the module client cannot be created
@@ -224,7 +259,7 @@ public class ModuleClient extends InternalClient
             log.debug("Creating module client with the provided connection string");
 
             //Codes_SRS_MODULECLIENT_34_020: [If an edgehub or iothub connection string is present, this function shall create a module client instance using that connection string and the provided protocol.]
-            ModuleClient moduleClient = null;
+            ModuleClient moduleClient;
             try
             {
                 moduleClient = new ModuleClient(connectionString, protocol, clientOptions);
@@ -333,6 +368,7 @@ public class ModuleClient extends InternalClient
         }
     }
 
+    @SuppressWarnings("SameParameterValue") // The SEND_PERIOD is currently 10ms for all protocols, but can be made configurable in the future.
     private ModuleClient(IotHubAuthenticationProvider iotHubAuthenticationProvider, IotHubClientProtocol protocol, long sendPeriodMillis, long receivePeriodMillis) throws IOException, TransportException
     {
         super(iotHubAuthenticationProvider, protocol, sendPeriodMillis, receivePeriodMillis);
@@ -509,6 +545,37 @@ public class ModuleClient extends InternalClient
             throws IOException, IllegalArgumentException, UnsupportedOperationException
     {
         this.startTwinInternal(deviceTwinStatusCallback, deviceTwinStatusCallbackContext, genericPropertyCallBack, genericPropertyCallBackContext);
+    }
+
+    /**
+     * Starts the module twin. This module client will receive a callback with the current state of the full twin, including
+     * reported properties and desired properties. After that callback is received, this module client will receive a callback
+     * each time a desired property is updated. That callback will either contain the full desired properties set, or
+     * only the updated desired property depending on how the desired property was changed. IoT Hub supports a PUT and a PATCH
+     * on the twin. The PUT will cause this module client to receive the full desired properties set, and the PATCH
+     * will cause this module client to only receive the updated desired properties. Similarly, the version
+     * of each desired property will be incremented from a PUT call, and only the actually updated desired property will
+     * have its version incremented from a PATCH call. The java service client library uses the PATCH call when updated desired properties,
+     * but it builds the patch such that all properties are included in the patch. As a result, the device side will receive full twin
+     * updates, not partial updates.
+     *
+     * See <a href="https://docs.microsoft.com/en-us/rest/api/iothub/service/twin/replacemoduletwin">PUT</a> and
+     * <a href="https://docs.microsoft.com/en-us/rest/api/iothub/service/twin/updatemoduletwin">PATCH</a>
+     *
+     * @param deviceTwinStatusCallback the IotHubEventCallback callback for providing the status of Device Twin operations. Cannot be {@code null}.
+     * @param deviceTwinStatusCallbackContext the context to be passed to the status callback. Can be {@code null}.
+     * @param genericPropertiesCallBack the TwinPropertyCallBack callback for providing any changes in desired properties. Cannot be {@code null}.
+     * @param genericPropertyCallBackContext the context to be passed to the property callback. Can be {@code null}.
+     *
+     * @throws IllegalArgumentException if the callback is {@code null}
+     * @throws UnsupportedOperationException if called more than once on the same device
+     * @throws IOException if called when client is not opened
+     */
+    public void startTwin(IotHubEventCallback deviceTwinStatusCallback, Object deviceTwinStatusCallbackContext,
+                                TwinPropertiesCallback genericPropertiesCallBack, Object genericPropertyCallBackContext)
+            throws IOException, IllegalArgumentException, UnsupportedOperationException
+    {
+        this.startTwinInternal(deviceTwinStatusCallback, deviceTwinStatusCallbackContext, genericPropertiesCallBack, genericPropertyCallBackContext);
     }
 
     /**

@@ -73,9 +73,9 @@ public class InternalClientTest
     @Mocked
     ProxySettings mockProxySettings;
 
-    private static long SEND_PERIOD_MILLIS = 10L;
-    private static long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
-    private static long RECEIVE_PERIOD_MILLIS_HTTPS = 25*60*1000; /*25 minutes*/
+    private static final long SEND_PERIOD_MILLIS = 10L;
+    private static final long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
+    private static final long RECEIVE_PERIOD_MILLIS_HTTPS = 25*60*1000; /*25 minutes*/
 
     /* Tests_SRS_INTERNALCLIENT_21_004: [If the connection string is null or empty, the function shall throw an IllegalArgumentException.] */
     @Test (expected = IllegalArgumentException.class)
@@ -1405,7 +1405,7 @@ public class InternalClientTest
                 mockConfig.getAuthenticationType();
                 result = DeviceClientConfig.AuthType.SAS_TOKEN;
 
-                mockConfig.getSasTokenAuthentication().isRenewalNecessary();
+                mockConfig.getSasTokenAuthentication().isAuthenticationProviderRenewalNecessary();
                 result = true;
             }
         };
@@ -1457,7 +1457,7 @@ public class InternalClientTest
         new Verifications()
         {
             {
-                mockDeviceIO.registerConnectionStatusChangeCallback(mockedIotHubConnectionStatusChangeCallback, context);
+                Deencapsulation.invoke(mockDeviceIO, "registerConnectionStatusChangeCallback", new Class[] {IotHubConnectionStatusChangeCallback.class, Object.class, String.class}, mockedIotHubConnectionStatusChangeCallback, context, null);
                 times = 1;
             }
         };

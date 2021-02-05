@@ -6,8 +6,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.microsoft.azure.sdk.iot</groupId>
-	<artifactId>iot-edge-e2e-wrapper</artifactId>
+    <artifactId>iot-edge-e2e-wrapper</artifactId>
     <version>1.0.0</version>
     <name>IoT SDK Edge E2E wrappers</name>
 
@@ -22,12 +21,6 @@
             <version>4.12</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>28.2-jre</version>
-        </dependency>
-        
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-unit</artifactId>
@@ -49,7 +42,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.10.1</version>
+            <version>2.11.2</version>
         </dependency>
 
         <dependency>

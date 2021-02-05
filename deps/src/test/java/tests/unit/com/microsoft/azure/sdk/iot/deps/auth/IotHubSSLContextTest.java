@@ -30,7 +30,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /*
  * Unit tests for IotHubSSLContext
@@ -61,18 +60,18 @@ public class IotHubSSLContextTest
     @Mocked BouncyCastleProvider mockedBouncyCastleProvider;
     @Mocked Security mockedSecurity;
 
-    private final static Collection<Certificate> testCollection = new LinkedHashSet<Certificate>();
+    private final static Collection<Certificate> testCollection = new LinkedHashSet<>();
 
     private void generateSSLContextExpectations() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException, CertificateException
     {
         new NonStrictExpectations()
         {
             {
-                mockedSSLContext.getInstance(anyString);
+                SSLContext.getInstance(anyString);
                 result = mockedSSLContext;
-                mockedTrustManagerFactory.getInstance(anyString);
+                TrustManagerFactory.getInstance(anyString);
                 result = mockedTrustManagerFactory;
-                mockedKeyStore.getInstance(anyString);
+                KeyStore.getInstance(anyString);
                 result = mockedKeyStore;
                 Deencapsulation.invoke(mockedCertificateManager, "getCertificateCollection");
                 result = testCollection;

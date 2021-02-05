@@ -9,7 +9,6 @@ import com.microsoft.azure.sdk.iot.device.transport.IotHubConnectionStatus;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.SocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.List;
 /** Sends a number of event messages to an IoT Hub. */
 public class SendEventWithProxy
 {
-    private static List failedMessageListOnClose = new ArrayList(); // List of messages that failed on close
+    private static final List<String> failedMessageListOnClose = new ArrayList<>(); // List of messages that failed on close
 
     protected static class EventCallback implements IotHubEventCallback
     {
@@ -53,18 +52,18 @@ public class SendEventWithProxy
 
             if (status == IotHubConnectionStatus.DISCONNECTED)
             {
-                //connection was lost, and is not being re-established. Look at provided exception for
-                // how to resolve this issue. Cannot send messages until this issue is resolved, and you manually
-                // re-open the device client
+                System.out.println("The connection was lost, and is not being re-established." +
+                        " Look at provided exception for how to resolve this issue." +
+                        " Cannot send messages until this issue is resolved, and you manually re-open the device client");
             }
             else if (status == IotHubConnectionStatus.DISCONNECTED_RETRYING)
             {
-                //connection was lost, but is being re-established. Can still send messages, but they won't
-                // be sent until the connection is re-established
+                System.out.println("The connection was lost, but is being re-established." +
+                        " Can still send messages, but they won't be sent until the connection is re-established");
             }
             else if (status == IotHubConnectionStatus.CONNECTED)
             {
-                //Connection was successfully re-established. Can send messages.
+                System.out.println("The connection was successfully established. Can send messages.");
             }
         }
     }
@@ -142,7 +141,7 @@ public class SendEventWithProxy
         else
         {
             System.out.format(
-                    "Received a protocol string that could not be understood: %d.\n"
+                    "Received a protocol string that could not be understood: %s.\n"
                             + "The program should be called with the following args: \n"
                             + "1. [Device connection string] - String containing Hostname, Device Id & Device Key in one of the following formats: HostName=<iothub_host_name>;DeviceId=<device_id>;SharedAccessKey=<device_key> or HostName=<iothub_host_name>;DeviceId=<device_id>;SharedAccessKey=<device_key>;GatewayHostName=<gateway> \n"
                             + "2. [number of requests to send]\n"
@@ -166,8 +165,8 @@ public class SendEventWithProxy
             throw new IllegalArgumentException("Expected argument 5 (port number) to be an integer");
         }
 
-        String proxyUsername = "";
-        char[] proxyPassword = new char[0];
+        String proxyUsername;
+        char[] proxyPassword;
         if (args.length == 7)
         {
             proxyUsername = args[5];

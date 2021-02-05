@@ -10,8 +10,6 @@ import com.microsoft.azure.sdk.iot.service.RegistryManager;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Manages module on IotHub - CRUD operations */
@@ -67,13 +65,9 @@ public class ModuleManagerSample
 
             System.out.println("Module created: " + module.getId());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -83,7 +77,7 @@ public class ModuleManagerSample
     {
         RegistryManager registryManager = RegistryManager.createFromConnectionString(SampleUtils.iotHubConnectionString);
 
-        Module returnModule = null;
+        Module returnModule;
         try
         {
             returnModule = registryManager.getModule(SampleUtils.deviceId, SampleUtils.moduleId0);
@@ -93,13 +87,9 @@ public class ModuleManagerSample
             System.out.println("Module secondary key: " + returnModule.getSecondaryKey());
             System.out.println("Module eTag: " + returnModule.geteTag());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         List<Module> list = registryManager.getModulesOnDevice(SampleUtils.deviceId);
@@ -133,13 +123,9 @@ public class ModuleManagerSample
             System.out.println("Device primary key: " + module.getPrimaryKey());
             System.out.println("Device secondary key: " + module.getSecondaryKey());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -156,13 +142,9 @@ public class ModuleManagerSample
             registryManager.removeModule(SampleUtils.deviceId, SampleUtils.moduleId1);
             System.out.println("Module removed: " + SampleUtils.moduleId1);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();

@@ -32,12 +32,19 @@
         <module>send-event-x509</module>
         <module>send-receive-x509-sample</module>
         <module>transportclient-sample</module>
+        <module>multiplexing-sample</module>
         <module>module-invoke-method-sample</module>
         <module>send-event-with-proxy</module>
         <module>device-reconnection-sample</module>
         <module>pnp-device-sample</module>
+        <module>custom-sas-token-provider-sample</module>
     </modules>
     <dependencies>
+        <!--suppress MavenDuplicateDependenciesInspection -->
+        <!--
+        This duplicate dependency declaration warning can be ignored as one child Pom.xml duplicates this dependency declaration
+        in order to demonstrate excluding bouncycastle dependency from the device client library.
+        -->
         <dependency>
             <groupId>com.microsoft.azure.sdk.iot</groupId>
             <artifactId>${iot-device-client-artifact-id}</artifactId>

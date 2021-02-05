@@ -20,6 +20,7 @@ import org.apache.qpid.proton.engine.*;
 import org.apache.qpid.proton.engine.impl.TransportInternal;
 import org.apache.qpid.proton.reactor.Reactor;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 
 @Slf4j
@@ -40,8 +41,9 @@ public class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithCleanup
     protected final String sasToken;
     protected final IotHubServiceClientProtocol iotHubServiceClientProtocol;
     protected final ProxyOptions proxyOptions;
+    protected final SSLContext sslContext;
 
-    protected AmqpConnectionHandler(String hostName, String userName, String sasToken, IotHubServiceClientProtocol iotHubServiceClientProtocol, ProxyOptions proxyOptions)
+    protected AmqpConnectionHandler(String hostName, String userName, String sasToken, IotHubServiceClientProtocol iotHubServiceClientProtocol, ProxyOptions proxyOptions, SSLContext sslContext)
     {
         if (Tools.isNullOrEmpty(hostName))
         {
@@ -71,6 +73,7 @@ public class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithCleanup
         this.hostName = hostName;
         this.userName = userName;
         this.sasToken = sasToken;
+        this.sslContext = sslContext; // if null, a default SSLContext will be generated for the user
     }
 
     @Override
@@ -116,13 +119,13 @@ public class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithCleanup
             Sasl sasl = transport.sasl();
             sasl.plain(this.userName, this.sasToken);
 
-            SslDomain domain = makeDomain(SslDomain.Mode.CLIENT);
+            SslDomain domain = makeDomain();
             domain.setPeerAuthentication(SslDomain.VerifyMode.VERIFY_PEER);
             Ssl ssl = transport.ssl(domain);
 
             if (this.proxyOptions != null)
             {
-                addProxyLayer(transport, this.hostName, AMQPS_WS_PORT);
+                addProxyLayer(transport, this.hostName);
             }
         }
     }
@@ -173,34 +176,41 @@ public class AmqpConnectionHandler extends ErrorLoggingBaseHandlerWithCleanup
 
     /**
      * Create Proton SslDomain object from Address using the given Ssl mode
-     * @param mode The proton enum value of requested Ssl mode
      * @return The created Ssl domain
      */
-    private SslDomain makeDomain(SslDomain.Mode mode)
+    private SslDomain makeDomain()
     {
         SslDomain domain = Proton.sslDomain();
 
         try
         {
-            // Need the base trusted certs for IotHub in our ssl context. IotHubSSLContext handles that
-            domain.setSslContext(new IotHubSSLContext().getSSLContext());
+            if (this.sslContext == null)
+            {
+                // Need the base trusted certs for IotHub in our ssl context. IotHubSSLContext handles that
+                domain.setSslContext(new IotHubSSLContext().getSSLContext());
+            }
+            else
+            {
+                // Custom SSLContext set by user from service client options
+                domain.setSslContext(this.sslContext);
+            }
         }
         catch (Exception e)
         {
             this.savedException = e;
         }
 
-        domain.init(mode);
+        domain.init(SslDomain.Mode.CLIENT);
 
         return domain;
     }
 
-    private void addProxyLayer(Transport transport, String hostName, int port)
+    private void addProxyLayer(Transport transport, String hostName)
     {
         log.trace("Adding proxy layer to amqp_ws connection");
         ProxyImpl proxy = new ProxyImpl();
         final ProxyHandler proxyHandler = new ProxyHandlerImpl();
-        proxy.configure(hostName + ":" + port, null, proxyHandler, transport);
+        proxy.configure(hostName + ":" + AmqpConnectionHandler.AMQPS_WS_PORT, null, proxyHandler, transport);
         ((TransportInternal) transport).addTransportLayer(proxy);
     }
 }

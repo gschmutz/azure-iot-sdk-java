@@ -6,7 +6,6 @@ package com.microsoft.azure.sdk.iot.device.transport.https;
 import com.microsoft.azure.sdk.iot.device.*;
 import com.microsoft.azure.sdk.iot.device.edge.MethodRequest;
 import com.microsoft.azure.sdk.iot.device.edge.MethodResult;
-import com.microsoft.azure.sdk.iot.device.exceptions.IotHubServiceException;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.device.net.IotHubUri;
 import com.microsoft.azure.sdk.iot.device.transport.IotHubTransportManager;
@@ -17,6 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -232,8 +232,7 @@ public class HttpsTransportManager implements IotHubTransportManager
         if (responseMessage.getStatus() != IotHubStatusCode.OK && responseMessage.getStatus() != IotHubStatusCode.OK_EMPTY)
         {
             //Codes_SRS_HTTPSTRANSPORTMANAGER_34_026 [If the http response contains an error code, this function shall throw the associated exception.]
-            IotHubServiceException exception = IotHubStatusCode.getConnectionStatusException(responseMessage.getStatus(), new String(responseMessage.getBytes()));
-            throw exception;
+            throw IotHubStatusCode.getConnectionStatusException(responseMessage.getStatus(), new String(responseMessage.getBytes()));
         }
 
         //Codes_SRS_HTTPSTRANSPORTMANAGER_34_027 [If the http response doesn't contain an error code, this function return a method result with the response message body as the method result body.]
@@ -243,14 +242,14 @@ public class HttpsTransportManager implements IotHubTransportManager
 
     private static URI getDeviceMethodUri(String deviceId) throws UnsupportedEncodingException, URISyntaxException
     {
-        deviceId = URLEncoder.encode(deviceId, "UTF-8");
+        deviceId = URLEncoder.encode(deviceId, StandardCharsets.UTF_8.name());
         return new URI(String.format(DeviceMethodUriFormat, deviceId));
     }
 
     private static URI getModuleMethodUri(String deviceId, String moduleId) throws UnsupportedEncodingException, URISyntaxException
     {
-        deviceId = URLEncoder.encode(deviceId, "UTF-8");
-        moduleId = URLEncoder.encode(moduleId, "UTF-8");
+        deviceId = URLEncoder.encode(deviceId, StandardCharsets.UTF_8.name());
+        moduleId = URLEncoder.encode(moduleId, StandardCharsets.UTF_8.name());
         return new URI(String.format(ModuleMethodUriFormat, deviceId, moduleId));
     }
 }

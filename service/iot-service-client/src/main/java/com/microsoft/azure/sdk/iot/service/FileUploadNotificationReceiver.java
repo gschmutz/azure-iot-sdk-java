@@ -8,6 +8,7 @@ package com.microsoft.azure.sdk.iot.service;
 import com.microsoft.azure.sdk.iot.service.transport.amqps.AmqpFileUploadNotificationReceive;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -18,20 +19,7 @@ public class FileUploadNotificationReceiver extends Receiver
 {
     private final long DEFAULT_TIMEOUT_MS = 60000;
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
-    private AmqpFileUploadNotificationReceive amqpFileUploadNotificationReceive;
-
-    /**
-     * Constructor to verify initialization parameters
-     * Create instance of AmqpReceive
-     * @param hostName The iot hub host name
-     * @param userName The iot hub user name
-     * @param sasToken The iot hub SAS token for the given device
-     * @param iotHubServiceClientProtocol The iot hub protocol name
-     */
-    FileUploadNotificationReceiver(String hostName, String userName, String sasToken, IotHubServiceClientProtocol iotHubServiceClientProtocol)
-    {
-        this(hostName, userName, sasToken, iotHubServiceClientProtocol, null);
-    }
+    private final AmqpFileUploadNotificationReceive amqpFileUploadNotificationReceive;
 
     /**
      * Constructor to verify initialization parameters
@@ -41,8 +29,10 @@ public class FileUploadNotificationReceiver extends Receiver
      * @param sasToken The iot hub SAS token for the given device
      * @param iotHubServiceClientProtocol The iot hub protocol name
      * @param proxyOptions the proxy options to tunnel through, if a proxy should be used.
+     * @param sslContext the SSL context to use during the TLS handshake when opening the connection. If null, a default
+     *                   SSL context will be generated. This default SSLContext trusts the IoT Hub public certificates.
      */
-    FileUploadNotificationReceiver(String hostName, String userName, String sasToken, IotHubServiceClientProtocol iotHubServiceClientProtocol, ProxyOptions proxyOptions)
+    FileUploadNotificationReceiver(String hostName, String userName, String sasToken, IotHubServiceClientProtocol iotHubServiceClientProtocol, ProxyOptions proxyOptions, SSLContext sslContext)
     {
         if (Tools.isNullOrEmpty(hostName))
         {
@@ -61,8 +51,7 @@ public class FileUploadNotificationReceiver extends Receiver
             throw new IllegalArgumentException("iotHubServiceClientProtocol cannot be null");
         }
 
-        // Codes_SRS_SERVICE_SDK_JAVA_FILEUPLOADNOTIFICATIONRECEIVER_25_002: [** The constructor shall create a new instance of AmqpFileUploadNotificationReceive object **]**
-        this.amqpFileUploadNotificationReceive = new AmqpFileUploadNotificationReceive(hostName, userName, sasToken, iotHubServiceClientProtocol, proxyOptions);
+        this.amqpFileUploadNotificationReceive = new AmqpFileUploadNotificationReceive(hostName, userName, sasToken, iotHubServiceClientProtocol, proxyOptions, sslContext);
     }
 
     /**
@@ -214,10 +203,7 @@ public class FileUploadNotificationReceiver extends Receiver
             {
                 FileUploadNotification responseFileUploadNotification = receive(timeoutMs);
                 future.complete(responseFileUploadNotification);
-            } catch (IOException e)
-            {
-                future.completeExceptionally(e);
-            } catch (InterruptedException e)
+            } catch (IOException | InterruptedException e)
             {
                 future.completeExceptionally(e);
             }

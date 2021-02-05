@@ -8,13 +8,8 @@ import com.microsoft.azure.sdk.iot.device.DeviceTwin.TwinPropertyCallBack;
 import com.microsoft.azure.sdk.iot.device.edge.MethodRequest;
 import com.microsoft.azure.sdk.iot.device.edge.MethodResult;
 import com.microsoft.azure.sdk.iot.device.exceptions.ModuleClientException;
-import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
-import com.microsoft.azure.sdk.iot.device.transport.ExponentialBackoffWithJitter;
-import com.microsoft.azure.sdk.iot.device.transport.RetryDecision;
-import com.microsoft.azure.sdk.iot.device.transport.RetryPolicy;
 import io.swagger.server.api.model.Certificate;
 import io.swagger.server.api.model.ConnectResponse;
-import io.swagger.server.api.model.MethodRequestResponse;
 import io.swagger.server.api.MainApiException;
 import io.swagger.server.api.model.RoundtripMethodCallBody;
 import io.vertx.core.AsyncResult;
@@ -22,7 +17,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import org.junit.Assert;
 
 import java.io.IOException;
 import java.net.*;
@@ -69,22 +63,17 @@ public class ModuleGlue
         System.out.printf("ConnectFromEnvironment called with transport %s%n", transportType);
 
         //This is the default URL stream handler factory
-        URLStreamHandlerFactory fac = new URLStreamHandlerFactory()
-        {
-            @Override
-            public URLStreamHandler createURLStreamHandler(String protocol)
+        URLStreamHandlerFactory fac = protocol -> {
+            if (protocol.equals("http"))
             {
-                if (protocol.equals("http"))
-                {
-                    return new sun.net.www.protocol.http.Handler();
-                }
-                else if(protocol.equals("https"))
-                {
-                    return new sun.net.www.protocol.https.Handler();
-                }
-
-                return null;
+                return new sun.net.www.protocol.http.Handler();
             }
+            else if(protocol.equals("https"))
+            {
+                return new sun.net.www.protocol.https.Handler();
+            }
+
+            return null;
         };
 
         try
@@ -157,7 +146,7 @@ public class ModuleGlue
             ModuleClient client = new ModuleClient(connectionString, protocol);
 
             String cert = caCertificate.getCert();
-            if (cert != null && cert != "")
+            if (cert != null && !cert.isEmpty())
             {
                 client.setOption("SetCertificateAuthority", cert);
             }
@@ -334,7 +323,7 @@ public class ModuleGlue
         }
     }
 
-    private ModuleTwinPropertyCallBack _deviceTwinPropertyCallback = new ModuleTwinPropertyCallBack();
+    private final ModuleTwinPropertyCallBack _deviceTwinPropertyCallback = new ModuleTwinPropertyCallBack();
 
     private static class IotHubEventCallbackImpl implements IotHubEventCallback
     {
@@ -365,7 +354,7 @@ public class ModuleGlue
         }
     }
 
-    private IotHubEventCallbackImpl _deviceTwinStatusCallback = new IotHubEventCallbackImpl();
+    private final IotHubEventCallbackImpl _deviceTwinStatusCallback = new IotHubEventCallbackImpl();
 
 
     public void enableTwin(String connectionId, final Handler<AsyncResult<Void>> handler)
@@ -702,7 +691,7 @@ public class ModuleGlue
 
     private Set<Property> objectToPropSet(JsonObject props)
     {
-        Set<Property> propSet = new HashSet<Property>();
+        Set<Property> propSet = new HashSet<>();
         for (String key : props.fieldNames())
         {
             // TODO: we may need to make this function recursive.

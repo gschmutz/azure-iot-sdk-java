@@ -8,12 +8,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import lombok.Getter;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * The information provided from IoT Hub that can be used with the Azure Storage SDK to upload a file from your device, including authentication.
@@ -21,30 +21,29 @@ import java.net.URLEncoder;
 public class FileUploadSasUriResponse
 {
     private static final String HTTPS_URL_STRING = "https://";
-    private static final String UTF_8_STRING = "UTF-8";
 
     private static final String CORRELATION_ID_TAG = "correlationId";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(CORRELATION_ID_TAG)
     private String correlationId = null;
 
     private static final String HOST_NAME_TAG = "hostName";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(HOST_NAME_TAG)
     private String hostName = null;
 
     private static final String CONTAINER_NAME_TAG = "containerName";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(CONTAINER_NAME_TAG)
     private String containerName = null;
 
     private static final String BLOB_NAME_TAG = "blobName";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(BLOB_NAME_TAG)
     private String blobName = null;
 
     private static final String SAS_TOKEN_TAG = "sasToken";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(SAS_TOKEN_TAG)
     private String sasToken = null;
 
@@ -138,7 +137,7 @@ public class FileUploadSasUriResponse
         String putString = HTTPS_URL_STRING +
                 hostName + "/" +
                 containerName + "/" +
-                URLEncoder.encode(blobName, UTF_8_STRING) + // Pass URL encoded blob name to support special characters
+                URLEncoder.encode(blobName, StandardCharsets.UTF_8.name()) + // Pass URL encoded blob name to support special characters
                 sasToken;
 
         return new URI(putString);

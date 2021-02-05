@@ -9,9 +9,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.microsoft.azure.sdk.iot.deps.twin.TwinMetadata;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +24,8 @@ import java.util.regex.Pattern;
 /**
  * Set of static functions to help the serializer.
  */
+// Unchecked casts of Maps to Map<String, Object> are safe as long as service is returning valid twin json payloads. Since all json keys are Strings, all maps must be Map<String, Object>
+@SuppressWarnings("unchecked")
 public class ParserUtility
 {
     private static final String DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ss";
@@ -56,14 +57,7 @@ public class ParserUtility
         }
 
         /* Codes_SRS_PARSER_UTILITY_21_003: [The validateStringUTF8 shall throw IllegalArgumentException if the provided string contains at least one not UTF-8 character.] */
-        try
-        {
-            if(str.getBytes("UTF-8").length != str.length())
-            {
-                throw new IllegalArgumentException("parameter contains non UTF-8 character");
-            }
-        }
-        catch(UnsupportedEncodingException e)
+        if(str.getBytes(StandardCharsets.UTF_8).length != str.length())
         {
             throw new IllegalArgumentException("parameter contains non UTF-8 character");
         }
@@ -174,31 +168,17 @@ public class ParserUtility
         {
             Object value = entry.getValue();
 
-            /* Codes_SRS_PARSER_UTILITY_21_051: [The validateMap shall throws IllegalArgumentException if any value contains illegal type (array or invalid class).] */
-            if((value != null) && ((value.getClass().isArray()) || (value.getClass().isLocalClass())))
+            if ((value != null) && ((value.getClass().isArray()) || (value.getClass().isLocalClass())))
             {
                 throw new IllegalArgumentException("Map contains illegal value type " + value.getClass().getName());
             }
 
-            if((value != null) && (value instanceof Map))
+
+            if (value instanceof Map)
             {
-                /* Codes_SRS_PARSER_UTILITY_21_052: [The validateMap shall throws IllegalArgumentException if the provided map contains more than maxLevel levels and those extra levels contain more than just metadata.] */
                 validateMapInternal((Map<String, Object>) value);
             }
         }
-    }
-
-    private static boolean mapOnlyContainsMetaData(Map<String, Object> map)
-    {
-        for (String key : map.keySet())
-        {
-            if (!(key.equals(TwinMetadata.LAST_UPDATE_TAG)) && !(key.equals(TwinMetadata.LAST_UPDATE_VERSION_TAG)))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**

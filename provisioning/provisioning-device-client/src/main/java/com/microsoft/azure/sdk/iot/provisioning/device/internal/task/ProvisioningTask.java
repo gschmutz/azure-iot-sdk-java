@@ -7,10 +7,8 @@
 
 package com.microsoft.azure.sdk.iot.provisioning.device.internal.task;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.provisioning.device.*;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.ProvisioningDeviceClientConfig;
-import com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientStatus;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceConnectionException;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.parser.DeviceRegistrationResultParser;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.parser.RegistrationOperationStatusParser;
@@ -27,27 +25,27 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.*;
 
 import static com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientStatus.*;
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
 
 @Slf4j
-public class ProvisioningTask implements Callable
+public class ProvisioningTask implements Callable<Object>
 {
     private static final int MAX_THREADS_TO_RUN = 2;
     private static final int MAX_TIME_TO_WAIT_FOR_REGISTRATION = 1000000;
     private static final int MAX_TIME_TO_WAIT_FOR_STATUS_UPDATE = 10000;
-    private static final int DEFAULT_DELAY_BETWEEN_STATUS_CHECKS = 2 * 1000; //2 seconds
     private static final String THREAD_NAME = "azure-iot-sdk-ProvisioningTask";
 
-    private SecurityProvider securityProvider = null;
-    private ProvisioningDeviceClientContract provisioningDeviceClientContract = null;
-    private ProvisioningDeviceClientConfig provisioningDeviceClientConfig = null;
+    private final SecurityProvider securityProvider;
+    private final ProvisioningDeviceClientContract provisioningDeviceClientContract;
+    private final ProvisioningDeviceClientConfig provisioningDeviceClientConfig;
 
-    private ProvisioningDeviceClientRegistrationCallback provisioningDeviceClientRegistrationCallback = null;
-    private Object dpsRegistrationCallbackContext = null;
+    private final ProvisioningDeviceClientRegistrationCallback provisioningDeviceClientRegistrationCallback;
+    private final Object dpsRegistrationCallbackContext;
 
-    private Authorization authorization = null;
+    private final Authorization authorization;
     private ProvisioningDeviceClientStatus dpsStatus = null;
 
-    private ExecutorService executor;
+    private final ExecutorService executor;
 
     /**
      * Constructor for creating a provisioning task
@@ -110,9 +108,9 @@ public class ProvisioningTask implements Callable
     {
         RegisterTask registerTask = new RegisterTask(this.provisioningDeviceClientConfig, securityProvider,
                                                      provisioningDeviceClientContract, authorization);
-        FutureTask<RegistrationOperationStatusParser> futureRegisterTask = new FutureTask<RegistrationOperationStatusParser>(registerTask);
+        FutureTask<RegistrationOperationStatusParser> futureRegisterTask = new FutureTask<>(registerTask);
         executor.submit(futureRegisterTask);
-        RegistrationOperationStatusParser registrationOperationStatusParser =  futureRegisterTask.get(MAX_TIME_TO_WAIT_FOR_REGISTRATION,
+        RegistrationOperationStatusParser registrationOperationStatusParser = futureRegisterTask.get(MAX_TIME_TO_WAIT_FOR_REGISTRATION,
                                                                                                       TimeUnit.MILLISECONDS);
        if (registrationOperationStatusParser == null)
         {
@@ -144,7 +142,7 @@ public class ProvisioningTask implements Callable
         Thread.sleep(provisioningDeviceClientContract.getRetryValue());
         StatusTask statusTask = new StatusTask(securityProvider, provisioningDeviceClientContract, operationId,
                                                this.authorization);
-        FutureTask<RegistrationOperationStatusParser> futureStatusTask = new FutureTask<RegistrationOperationStatusParser>(statusTask);
+        FutureTask<RegistrationOperationStatusParser> futureStatusTask = new FutureTask<>(statusTask);
         executor.submit(futureStatusTask);
         RegistrationOperationStatusParser statusRegistrationOperationStatusParser =  futureStatusTask.get(MAX_TIME_TO_WAIT_FOR_STATUS_UPDATE, TimeUnit.MILLISECONDS);
 
@@ -227,7 +225,7 @@ public class ProvisioningTask implements Callable
 
                         //Codes_SRS_ProvisioningTask_34_016: [Upon reaching the terminal state ASSIGNED, if the saved security client is an instance of SecurityClientTpm, the security client shall decrypt and store the authentication key from the statusResponseParser.]
                         String authenticationKey = registrationStatus.getTpm().getAuthenticationKey();
-                        ((SecurityProviderTpm) this.securityProvider).activateIdentityKey(Base64.decodeBase64Local(authenticationKey.getBytes()));
+                        ((SecurityProviderTpm) this.securityProvider).activateIdentityKey(decodeBase64(authenticationKey.getBytes()));
                     }
                     log.info("Device provisioning service assigned the device successfully");
                     this.invokeRegistrationCallback(registrationInfo, null);

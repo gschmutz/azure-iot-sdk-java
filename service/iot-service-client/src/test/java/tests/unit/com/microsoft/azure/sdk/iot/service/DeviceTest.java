@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.security.NoSuchAlgorithmException;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.*;
 
 /**
@@ -34,7 +35,7 @@ public class DeviceTest
     // deviceId, Etag, Status, StatusReason, StatusUpdatedTime, ConnectionState, CloudToDeviceMessageCount
     // ConnectionStateUpdatedTime, LastActivityTime, symmetricKey, thumbprint, authentication]
     // Assert
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void device_get_all_properties()
     {
         // Arrange
@@ -75,9 +76,6 @@ public class DeviceTest
         cap.setIotEdge(true);
         device.setCapabilities(cap);
         assertEquals((Boolean)true, device.getCapabilities().isIotEdge());
-
-        device.setForceUpdate(true);
-        device.setForceUpdate(null);
     }
 
     // Tests_SRS_SERVICE_SDK_JAVA_DEVICE_12_002: [The function shall throw IllegalArgumentException if the input string is empty or null]
@@ -173,7 +171,7 @@ public class DeviceTest
         assertEquals(utcTimeDefault, device.getConnectionStateUpdatedTime());
         assertEquals(offsetTimeDefault, device.getLastActivityTime());
         assertEquals(0, device.getCloudToDeviceMessageCount());
-        assertEquals(null, device.getCapabilities());
+        assertNull(device.getCapabilities());
     }
 
     // Tests_SRS_SERVICE_SDK_JAVA_DEVICE_28_001: [The constructor shall set the deviceId, status and symmetricKey.]
@@ -221,7 +219,7 @@ public class DeviceTest
         assertEquals(utcTimeDefault, device.getConnectionStateUpdatedTime());
         assertEquals(offsetTimeDefault, device.getLastActivityTime());
         assertEquals(0, device.getCloudToDeviceMessageCount());
-        assertEquals(null, device.getCapabilities());
+        assertNull(device.getCapabilities());
     }
 
     //Tests_SRS_SERVICE_SDK_JAVA_DEVICE_34_018: [This method shall return a new instance of a DeviceParser object that is populated using the properties of this.]
@@ -231,7 +229,6 @@ public class DeviceTest
         // arrange
         String expectedDeviceId = "deviceCA";
         DeviceStatus expectedDeviceStatus = DeviceStatus.Disabled;
-        boolean expectedForceUpdate = false;
         String expectedStatusReason = "no reason";
         String expectedStatusUpdatedTime = "2001-09-09T09:09:09";
         int expectedCloudToDeviceMessageCount = 23;
@@ -245,7 +242,6 @@ public class DeviceTest
 
         Device device = Device.createDevice(expectedDeviceId, AuthenticationType.CERTIFICATE_AUTHORITY);
         device.setStatus(expectedDeviceStatus);
-        device.setForceUpdate(expectedForceUpdate);
         Deencapsulation.setField(device, "statusReason", expectedStatusReason);
         Deencapsulation.setField(device, "statusUpdatedTime", expectedStatusUpdatedTime);
         Deencapsulation.setField(device, "cloudToDeviceMessageCount", expectedCloudToDeviceMessageCount);

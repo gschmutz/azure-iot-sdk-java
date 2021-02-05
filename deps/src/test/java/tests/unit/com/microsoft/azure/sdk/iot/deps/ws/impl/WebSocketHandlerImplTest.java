@@ -25,14 +25,15 @@ import com.microsoft.azure.sdk.iot.deps.ws.WebSocketHandler;
 import com.microsoft.azure.sdk.iot.deps.ws.WebSocketHeader;
 import org.junit.Test;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.*;
 
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("CommentedOutCode") // Test method may be used locally for some executions. Leaving for now.
 public class WebSocketHandlerImplTest
 {
     @Test
@@ -44,7 +45,7 @@ public class WebSocketHandlerImplTest
         String queryKey = "?iothub-no-client-cert=";
         String queryValue = "true";
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -98,7 +99,7 @@ public class WebSocketHandlerImplTest
                 String keyBase64 = line.substring(19);
                 if (keyBase64.length() == 24)
                 {
-                    byte[] decoded = Base64.decodeBase64Local(keyBase64.getBytes());
+                    byte[] decoded = decodeBase64(keyBase64.getBytes());
 
                     if (decoded.length == 16)
                     {
@@ -158,7 +159,7 @@ public class WebSocketHandlerImplTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -248,7 +249,7 @@ public class WebSocketHandlerImplTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -266,7 +267,7 @@ public class WebSocketHandlerImplTest
 
         spyWebSocketHandler.createUpgradeRequest(hostName, webSocketPath, webSocketPort, webSocketProtocol, additionalHeaders);
         assertTrue(spyWebSocketHandler.validateUpgradeReply(buffer));
-        assertFalse(mockWebSocketUpgrade == null);
+        assertNotNull(mockWebSocketUpgrade);
         verify(mockWebSocketUpgrade, times(1)).validateUpgradeReply(data);
     }
 
@@ -277,7 +278,7 @@ public class WebSocketHandlerImplTest
         String webSocketPath = "path1/path2";
         int webSocketPort = 1234567890;
         String webSocketProtocol = "subprotocol_name";
-        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        Map<String, String> additionalHeaders = new HashMap<>();
         additionalHeaders.put("header1", "content1");
         additionalHeaders.put("header2", "content2");
         additionalHeaders.put("header3", "content3");
@@ -368,7 +369,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[4]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[5]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -425,7 +426,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[4]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[5]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -482,7 +483,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[4]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[5]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -546,7 +547,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[6]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[7]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -610,7 +611,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[6]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[7]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -674,7 +675,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[6]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[7]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -750,7 +751,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[12]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[13]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -826,7 +827,7 @@ public class WebSocketHandlerImplTest
         assertEquals("masking key mismatch 3", maskingKey[2], actual[12]);
         assertEquals("masking key mismatch 4", maskingKey[3], actual[13]);
 
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
 //    @Test
@@ -940,7 +941,6 @@ public class WebSocketHandlerImplTest
         int messageLength = 10;
         ByteBuffer srcBuffer = ByteBuffer.allocate(messageLength);
         ByteBuffer dstBuffer = ByteBuffer.allocate(messageLength);
-        ;
 
         spyWebSocketHandler.wrapBuffer(srcBuffer, dstBuffer);
     }
@@ -955,7 +955,6 @@ public class WebSocketHandlerImplTest
         ByteBuffer srcBuffer = ByteBuffer.allocate(messageLength);
         srcBuffer.flip();
         ByteBuffer dstBuffer = ByteBuffer.allocate(messageLength);
-        ;
 
         spyWebSocketHandler.wrapBuffer(srcBuffer, dstBuffer);
     }
@@ -985,7 +984,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MIN_HEADER_LENGTH, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1013,7 +1012,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MIN_HEADER_LENGTH, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1041,7 +1040,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MIN_HEADER_LENGTH, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1069,7 +1068,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, 2, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1097,7 +1096,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, 2, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1127,7 +1126,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MED_HEADER_LENGTH_NOMASK, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1157,7 +1156,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MED_HEADER_LENGTH_NOMASK, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1187,7 +1186,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MED_HEADER_LENGTH_NOMASK, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test
@@ -1223,7 +1222,7 @@ public class WebSocketHandlerImplTest
         byte[] expected = Arrays.copyOfRange(data, WebSocketHeader.MAX_HEADER_LENGTH_NOMASK, messageLength);
         byte[] actual = new byte[srcBuffer.remaining()];
         srcBuffer.get(actual);
-        assertTrue(Arrays.equals(expected, actual));
+        assertArrayEquals(expected, actual);
     }
 
     @Test

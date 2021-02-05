@@ -51,9 +51,9 @@ public class SecurityProviderTPMEmulator extends SecurityProviderTpm
             // TPMU_PUBLIC_ID       unique
             new TPM2B_PUBLIC_KEY_RSA());
     private final String registrationId;
-    private Tpm tpm = null;
-    private TPMT_PUBLIC ekPublic = null;
-    private TPMT_PUBLIC srkPublic = null;
+    private final Tpm tpm;
+    private final TPMT_PUBLIC ekPublic;
+    private final TPMT_PUBLIC srkPublic;
     private TPM2B_PUBLIC idKeyPub = null;
 
     private static final int MILLISECONDS_BETWEEN_TPM_CONNECTION_ATTEMPTS = 1000; //1 second
@@ -249,6 +249,7 @@ public class SecurityProviderTPMEmulator extends SecurityProviderTpm
         }
     }
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method, the params can be passed any value.
     private TPMT_PUBLIC createPersistentPrimary(Tpm tpm, TPM_HANDLE hPersistent, TPM_RH hierarchy, TPMT_PUBLIC inPub, String primaryRole) throws SecurityProviderException
     {
         ReadPublicResponse rpResp = tpm._allowErrors().ReadPublic(hPersistent);
@@ -428,7 +429,7 @@ public class SecurityProviderTPMEmulator extends SecurityProviderTpm
         if (encUriData.buffer.length > maxUriDataSize)
         {
             //SRS_SecurityProviderTPMEmulator_25_021: [ This method shall throw SecurityProviderException if the encoded Uri length is greater than Maximum Uri Length . ]
-            throw new SecurityProviderException("Too long encrypted URI data string. Max supported length is " + Integer.toString(maxUriDataSize));
+            throw new SecurityProviderException("Too long encrypted URI data string. Max supported length is " + maxUriDataSize);
         }
 
         // The template of the symmetric key used by the Service

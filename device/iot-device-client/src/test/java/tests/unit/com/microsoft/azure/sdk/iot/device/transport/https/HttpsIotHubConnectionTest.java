@@ -60,7 +60,7 @@ public class HttpsIotHubConnectionTest
     @Mocked
     ProxySettings mockProxySettings;
 
-    private static final String testSasToken = "SharedAccessSignature sr=test&sig=test&se=0";
+    private static final char[] testSasToken = "SharedAccessSignature sr=test&sig=test&se=0".toCharArray();
 
     @Before
     public void setup() throws IOException, TransportException
@@ -68,7 +68,7 @@ public class HttpsIotHubConnectionTest
         new NonStrictExpectations()
         {
             {
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 result=testSasToken;
             }
         };
@@ -146,11 +146,10 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final byte[] expectedBody = body;
         new Verifications()
         {
             {
-                new HttpsRequest((URL) any, (HttpsMethod) any, expectedBody, anyString, null);
+                new HttpsRequest((URL) any, (HttpsMethod) any, body, anyString, null);
             }
         };
     }
@@ -175,11 +174,10 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final byte[] expectedBody = body;
         new Verifications()
         {
             {
-                new HttpsRequest((URL) any, (HttpsMethod) any, expectedBody, anyString, mockProxySettings);
+                new HttpsRequest((URL) any, (HttpsMethod) any, body, anyString, mockProxySettings);
             }
         };
     }
@@ -209,13 +207,11 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final String expectedPropertyName = propertyName;
-        final String expectedPropertyValue = propertyValue;
         new Verifications()
         {
             {
-                mockRequest.setHeaderField(expectedPropertyName,
-                        expectedPropertyValue);
+                mockRequest.setHeaderField(propertyName,
+                        propertyValue);
             }
         };
     }
@@ -239,11 +235,10 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final int expectedReadTimeoutMillis = readTimeoutMillis;
         new Verifications()
         {
             {
-                mockRequest.setReadTimeout(expectedReadTimeoutMillis);
+                mockRequest.setReadTimeout(readTimeoutMillis);
             }
         };
     }
@@ -283,7 +278,7 @@ public class HttpsIotHubConnectionTest
         final String iotHubHostname = "test-iothubname";
         final String deviceId = "test-device-key";
         final String deviceKey = "test-device-key";
-        final String tokenStr = "test-token-str";
+        final char[] tokenStr = "test-token-str".toCharArray();
         new NonStrictExpectations()
         {
             {
@@ -293,7 +288,7 @@ public class HttpsIotHubConnectionTest
                 result = iotHubHostname;
                 mockConfig.getDeviceId();
                 result = deviceId;
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 result = tokenStr;
                 mockConfig.getAuthenticationType();
                 result = DeviceClientConfig.AuthType.SAS_TOKEN;
@@ -304,12 +299,11 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final String expectedTokenStr = tokenStr;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)authorization"),
-                        expectedTokenStr);
+                        String.valueOf(tokenStr));
             }
         };
     }
@@ -337,12 +331,11 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final String expectedPath = path;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)iothub-to"),
-                        expectedPath);
+                        path);
             }
         };
     }
@@ -447,12 +440,11 @@ public class HttpsIotHubConnectionTest
         conn.setListener(mockedListener);
         conn.sendMessage(mockedMessage);
 
-        final String expectedContentType = contentType;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)content-type"),
-                        expectedContentType);
+                        contentType);
             }
         };
     }
@@ -599,11 +591,10 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final byte[] expectedBody = body;
         new Verifications()
         {
             {
-                new HttpsRequest((URL) any, (HttpsMethod) any, expectedBody, anyString, null);
+                new HttpsRequest((URL) any, (HttpsMethod) any, body, anyString, null);
             }
         };
     }
@@ -634,13 +625,11 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final String expectedPropertyName = propertyName;
-        final String expectedPropertyValue = propertyValue;
         new Verifications()
         {
             {
-                mockRequest.setHeaderField(expectedPropertyName,
-                        expectedPropertyValue);
+                mockRequest.setHeaderField(propertyName,
+                        propertyValue);
             }
         };
     }
@@ -663,11 +652,10 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final int expectedReadTimeoutMillis = readTimeoutMillis;
         new Verifications()
         {
             {
-                mockRequest.setReadTimeout(expectedReadTimeoutMillis);
+                mockRequest.setReadTimeout(readTimeoutMillis);
             }
         };
     }
@@ -689,11 +677,10 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final int expectedReadTimeoutMillis = readTimeoutMillis;
         new Verifications()
         {
             {
-                mockRequest.setConnectTimeout(expectedReadTimeoutMillis);
+                mockRequest.setConnectTimeout(readTimeoutMillis);
             }
         };
     }
@@ -733,8 +720,7 @@ public class HttpsIotHubConnectionTest
     {
         final String iotHubHostname = "test-iothubname";
         final String deviceId = "test-device-key";
-        final String deviceKey = "test-device-key";
-        final String tokenStr = "test-token-str";
+        final char[] tokenStr = "test-token-str".toCharArray();
         final String uriPath = "/files";
         final HttpsMethod httpsMethod = HttpsMethod.POST;
         new NonStrictExpectations()
@@ -746,7 +732,7 @@ public class HttpsIotHubConnectionTest
                 result = iotHubHostname;
                 mockConfig.getDeviceId();
                 result = deviceId;
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 result = tokenStr;
             }
         };
@@ -754,12 +740,11 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final String expectedTokenStr = tokenStr;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)authorization"),
-                        expectedTokenStr);
+                        String.valueOf(tokenStr));
             }
         };
     }
@@ -856,12 +841,11 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.sendHttpsMessage(mockMsg, httpsMethod, uriPath, new HashMap<String, String>());
 
-        final String expectedContentType = contentType;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)content-type"),
-                        expectedContentType);
+                        contentType);
             }
         };
     }
@@ -969,11 +953,10 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.receiveMessage();
 
-        final int expectedReadTimeoutMillis = readTimeoutMillis;
         new Verifications()
         {
             {
-                mockRequest.setReadTimeout(expectedReadTimeoutMillis);
+                mockRequest.setReadTimeout(readTimeoutMillis);
             }
         };
     }
@@ -1013,7 +996,7 @@ public class HttpsIotHubConnectionTest
         final String iotHubHostname = "test-iothubname";
         final String deviceId = "test-device-key";
         final String deviceKey = "test-device-key";
-        final String tokenStr = "test-token-str";
+        final char[] tokenStr = "test-token-str".toCharArray();
         new NonStrictExpectations()
         {
             {
@@ -1023,7 +1006,7 @@ public class HttpsIotHubConnectionTest
                 result = iotHubHostname;
                 mockConfig.getDeviceId();
                 result = deviceId;
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 result = tokenStr;
             }
         };
@@ -1031,12 +1014,11 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.receiveMessage();
 
-        final String expectedTokenStr = tokenStr;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)authorization"),
-                        expectedTokenStr);
+                        String.valueOf(tokenStr));
             }
         };
     }
@@ -1057,12 +1039,11 @@ public class HttpsIotHubConnectionTest
         HttpsIotHubConnection conn = new HttpsIotHubConnection(mockConfig);
         conn.receiveMessage();
 
-        final String expectedPath = path;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)iothub-to"),
-                        expectedPath);
+                        path);
             }
         };
     }
@@ -1375,12 +1356,11 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.COMPLETE);
 
-        final String expectedPath = path;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)iothub-to"),
-                        expectedPath);
+                        path);
             }
         };
     }
@@ -1501,12 +1481,11 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.ABANDON);
 
-        final String expectedPath = path;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)iothub-to"),
-                        expectedPath);
+                        path);
             }
         };
     }
@@ -1626,12 +1605,11 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.REJECT);
 
-        final String expectedPath = path;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)iothub-to"),
-                        expectedPath);
+                        path);
             }
         };
     }
@@ -1663,11 +1641,10 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.REJECT);
 
-        final int expectedReadTimeoutMillis = readTimeoutMillis;
         new Verifications()
         {
             {
-                mockRequest.setReadTimeout(expectedReadTimeoutMillis);
+                mockRequest.setReadTimeout(readTimeoutMillis);
             }
         };
     }
@@ -1680,7 +1657,7 @@ public class HttpsIotHubConnectionTest
         final String iotHubHostname = "test-iothubname";
         final String deviceId = "test-device-key";
         final String deviceKey = "test-device-key";
-        final String tokenStr = "test-token-str";
+        final char[] tokenStr = "test-token-str".toCharArray();
         new NonStrictExpectations()
         {
             {
@@ -1698,7 +1675,7 @@ public class HttpsIotHubConnectionTest
                 result = iotHubHostname;
                 mockConfig.getDeviceId();
                 result = deviceId;
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 result = tokenStr;
             }
         };
@@ -1708,12 +1685,11 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.REJECT);
 
-        final String expectedTokenStr = tokenStr;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)authorization"),
-                        expectedTokenStr);
+                        String.valueOf(tokenStr));
             }
         };
     }
@@ -1742,12 +1718,11 @@ public class HttpsIotHubConnectionTest
         eTagMap.put(mockedTransportMessage, eTag);
         conn.sendMessageResult(mockedTransportMessage, IotHubMessageResult.REJECT);
 
-        final String expectedEtag = eTag;
         new Verifications()
         {
             {
                 mockRequest.setHeaderField(withMatch("(?i)if-match"),
-                        expectedEtag);
+                        eTag);
             }
         };
     }
@@ -1887,7 +1862,7 @@ public class HttpsIotHubConnectionTest
         new Verifications()
         {
             {
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 times = 1;
             }
         };
@@ -1914,7 +1889,7 @@ public class HttpsIotHubConnectionTest
         new Verifications()
         {
             {
-                mockConfig.getSasTokenAuthentication().getRenewedSasToken(false, false);
+                mockConfig.getSasTokenAuthentication().getSasToken();
                 times = 1;
             }
         };
@@ -2106,7 +2081,7 @@ public class HttpsIotHubConnectionTest
         new Verifications()
         {
             {
-                mockedListener.onMessageSent((IotHubTransportMessage) any, null);
+                mockedListener.onMessageSent((IotHubTransportMessage) any, null, null);
                 times = 1;
             }
         };
@@ -2131,7 +2106,7 @@ public class HttpsIotHubConnectionTest
     public void openAndCloseDoNothing() throws IOException, TransportException
     {
         HttpsIotHubConnection connection = new HttpsIotHubConnection(mockConfig);
-        connection.open(null);
+        connection.open();
         connection.close();
     }
 }

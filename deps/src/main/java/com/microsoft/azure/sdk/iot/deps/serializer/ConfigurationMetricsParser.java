@@ -5,22 +5,21 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class ConfigurationMetricsParser
 {
     private static final String RESULTS_NAME = "results";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(RESULTS_NAME)
     private Map<String, Long> results;
 
     private static final String QUERIES_NAME = "queries";
-    @Expose(serialize = true, deserialize = true)
+    @Expose
     @SerializedName(QUERIES_NAME)
     private Map<String, String> queries;
 
-    private transient static Gson gson = new Gson();
+    private final transient static Gson gson = new Gson();
 
     /**
      * Empty constructor: Used only to keep GSON happy.

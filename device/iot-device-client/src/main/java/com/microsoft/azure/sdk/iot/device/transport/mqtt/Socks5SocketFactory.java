@@ -78,7 +78,7 @@ public class Socks5SocketFactory extends SocketFactory
 
         byte[] getConnectCmd()
         {
-            final byte host[] = mTarget.getHostName().getBytes();
+            final byte[] host = mTarget.getHostName().getBytes();
             final byte[] data = new byte[7 + host.length];
             data[0] = (byte) 5;
             data[1] = (byte) CMD_CONNECT;
@@ -122,7 +122,7 @@ public class Socks5SocketFactory extends SocketFactory
         public void connect(final SocketAddress sa, final int a) throws IOException
         {
             mTarget = (InetSocketAddress) sa;
-            if (isLocal()) // ignore crazy timeout
+            if (isLocal()) // ignore timeout
             {
                 super.connect(new InetSocketAddress(getDirectInetAddress(), mTarget.getPort()), 1000);
             }
@@ -190,11 +190,9 @@ public class Socks5SocketFactory extends SocketFactory
             }
             if (mLocalIP == null)
             {
-                try
-                {
+                try {
                     mLocalIP = InetAddress.getByName(mLocalHost);
-                }
-                catch (final UnknownHostException e)
+                } catch (UnknownHostException e)
                 {
                 }
             }
@@ -243,13 +241,7 @@ public class Socks5SocketFactory extends SocketFactory
 
                 if ((type != ATYP_DOMAINNAME))
                 {
-                    try
-                    {
-                        mIp = InetAddress.getByName(mHost);
-                    }
-                    catch (final UnknownHostException uh_ex)
-                    {
-                    }
+                    mIp = InetAddress.getByName(mHost);
                 }
             }
         }

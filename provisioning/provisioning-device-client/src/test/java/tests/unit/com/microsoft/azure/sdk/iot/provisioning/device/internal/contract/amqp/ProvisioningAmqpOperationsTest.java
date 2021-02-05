@@ -29,7 +29,7 @@ import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /*
  * Unit tests for ContractAPIHttp
@@ -56,7 +56,7 @@ public class ProvisioningAmqpOperationsTest
     private AmqpMessage mockedAmqpMessage;
 
     @Mocked
-    private LinkedBlockingQueue<AmqpMessage> mockedQueueMessage = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<AmqpMessage> mockedQueueMessage = new LinkedBlockingQueue<>();
 
     @Mocked
     private byte[] mockedData;
@@ -65,7 +65,7 @@ public class ProvisioningAmqpOperationsTest
     private Binary mockedBinaryData;
 
     @Mocked
-    private ObjectLock mockedObjectLock = new ObjectLock();
+    private final ObjectLock mockedObjectLock = new ObjectLock();
 
     @Mocked
     private SaslHandler mockedSaslHandler;
@@ -142,7 +142,7 @@ public class ProvisioningAmqpOperationsTest
         boolean isConnected = provisioningAmqpOperations.isAmqpConnected();
 
         //assert
-        assertEquals(false, isConnected);
+        assertFalse(isConnected);
     }
 
     @Test
@@ -171,7 +171,7 @@ public class ProvisioningAmqpOperationsTest
         boolean isConnected = provisioningAmqpOperations.isAmqpConnected();
 
         //assert
-        assertEquals(true, isConnected);
+        assertTrue(isConnected);
     }
 
     // SRS_ProvisioningAmqpOperations_07_004: [open shall throw ProvisioningDeviceClientException if either registrationId or sslContext are null or empty.]
@@ -583,20 +583,6 @@ public class ProvisioningAmqpOperationsTest
                 times = 1;
             }
         };
-    }
-
-    @Test
-    public void UnusedFunctionsSucceeds() throws ProvisioningDeviceClientException
-    {
-        //arrange
-        ProvisioningAmqpOperations provisioningAmqpOperations = new ProvisioningAmqpOperations(TEST_SCOPE_ID, TEST_HOST_NAME);
-
-        //act
-        provisioningAmqpOperations.connectionEstablished();
-        provisioningAmqpOperations.connectionLost();
-        provisioningAmqpOperations.messageSent();
-
-        //assert
     }
 
     // SRS_ProvisioningAmqpOperations_34_020: [If the provided sasl handler is null, this function shall open the underlying amqpConnection synchronously.]

@@ -20,7 +20,6 @@ import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
 import com.microsoft.azure.sdk.iot.service.devicetwin.Pair;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,7 +56,7 @@ public class DeviceTwinWithVersionTests extends IntegrationTest
         isBasicTierHub = Boolean.parseBoolean(Tools.retrieveEnvironmentVariableValue(TestConstants.IS_BASIC_TIER_HUB_ENV_VAR_NAME));
         isPullRequest = Boolean.parseBoolean(Tools.retrieveEnvironmentVariableValue(TestConstants.IS_PULL_REQUEST));
 
-        List inputs =  Arrays.asList(
+        return Arrays.asList(
                 new Object[][]
                         {
                                 {AMQPS},
@@ -66,8 +65,6 @@ public class DeviceTwinWithVersionTests extends IntegrationTest
                                 {MQTT_WS},
                         }
         );
-
-        return inputs;
     }
 
     private static final long BREATHE_TIME = 100; // 0.1 sec
@@ -162,7 +159,7 @@ public class DeviceTwinWithVersionTests extends IntegrationTest
         }
     }
 
-    protected class DeviceTwinStatusCallBack implements IotHubEventCallback
+    protected static class DeviceTwinStatusCallBack implements IotHubEventCallback
     {
         public void execute(IotHubStatusCode status, Object context)
         {
@@ -187,12 +184,12 @@ public class DeviceTwinWithVersionTests extends IntegrationTest
         this.testInstance = new DeviceTwinWithVersionTestInstance(protocol);
     }
 
-    public class DeviceTwinWithVersionTestInstance
+    public static class DeviceTwinWithVersionTestInstance
     {
         public IotHubClientProtocol protocol;
         private com.microsoft.azure.sdk.iot.service.Device deviceForRegistryManager;
 
-        private DeviceTwin twinServiceClient;
+        private final DeviceTwin twinServiceClient;
         private TestDevice testDevice;
         public RegistryManager registryManager;
 

@@ -10,7 +10,6 @@ import com.microsoft.azure.sdk.iot.device.transport.https.HttpsResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -74,7 +73,7 @@ public class HttpsRequestResponseSerializer
 
         if (queryString != null && !queryString.isEmpty())
         {
-            builder.append("?" + queryString);
+            builder.append("?").append(queryString);
         }
 
         builder.append(SP);
@@ -83,7 +82,7 @@ public class HttpsRequestResponseSerializer
         builder.append(CR);
         builder.append(LF);
 
-        builder.append("Host: " + host + "\r\n");
+        builder.append("Host: ").append(host).append("\r\n");
 
         if (httpsRequest.getRequestHeaders() != null && !httpsRequest.getRequestHeaders().isEmpty())
         {
@@ -92,7 +91,7 @@ public class HttpsRequestResponseSerializer
 
         if (httpsRequest.getBody() != null && httpsRequest.getBody().length != 0)
         {
-            builder.append("Content-Length: " + httpsRequest.getBody().length + "\r\n");
+            builder.append("Content-Length: ").append(httpsRequest.getBody().length).append("\r\n");
         }
 
         // Headers end
@@ -170,8 +169,7 @@ public class HttpsRequestResponseSerializer
 
     private static String preProcessRequestPath(String path)
     {
-        String dnsSafePath = path.replace("[", "").replace("]", "");
-        return dnsSafePath;
+        return path.replace("[", "").replace("]", "");
     }
 
     private static Map<String, List<String>> readHeaderFields(BufferedReader bufferedReader) throws IOException
@@ -190,7 +188,7 @@ public class HttpsRequestResponseSerializer
             }
         }
 
-        for(String header : headers)
+        for (String header : headers)
         {
             if (header == null || header.isEmpty())
             {
@@ -201,14 +199,13 @@ public class HttpsRequestResponseSerializer
             int headerSeparatorPosition = header.indexOf(HeaderSeparator);
             if (headerSeparatorPosition <= 0)
             {
-                // Codes_SRS_HTTPREQUESTRESPONSESERIALIZER_34_008: [If a header is not separated from its value by a':', this function shall throw an IOException.]
                 throw new IOException("Header is invalid " + header + ".");
             }
 
             String headerName = header.substring(0, headerSeparatorPosition);
             String headerValue = header.substring(headerSeparatorPosition + 1);
 
-            List headerValues = new ArrayList();
+            List<String> headerValues = new ArrayList<>();
             headerValues.add(headerValue);
             headerFields.put(headerName, headerValues);
         }
@@ -218,14 +215,14 @@ public class HttpsRequestResponseSerializer
 
     private static byte[] readBody(BufferedReader bufferedReader) throws IOException
     {
-        String bodyString = "";
+        StringBuilder bodyString = new StringBuilder();
         String next = bufferedReader.readLine();
         while (next != null && !next.isEmpty())
         {
-            bodyString = bodyString + next;
+            bodyString.append(next);
             next = bufferedReader.readLine();
         }
 
-        return bodyString.getBytes();
+        return bodyString.toString().getBytes();
     }
 }

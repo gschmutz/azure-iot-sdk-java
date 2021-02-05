@@ -27,14 +27,14 @@ public class ContractAPIMqtt extends ProvisioningDeviceClientContract implements
     private static final String MQTT_REGISTER_MESSAGE_FMT = "$dps/registrations/PUT/iotdps-register/?$rid=%d";
     private static final String MQTT_STATUS_MESSAGE_FMT = "$dps/registrations/GET/iotdps-get-operationstatus/?$rid=%d&operationId=%s";
 
-    private static final int MAX_WAIT_TO_SEND_MSG = 1*60*1000; // 1 minute timeout
+    private static final int MAX_WAIT_TO_SEND_MSG = 60 * 1000; // 1 minute timeout
 
     private MqttConnection mqttConnection;
-    private String hostname;
-    private String idScope;
+    private final String hostname;
+    private final String idScope;
 
     private int packetId;
-    private boolean useWebSockets;
+    private final boolean useWebSockets;
 
     private final ObjectLock receiveLock = new ObjectLock();
     private final Queue<MqttMessage> receivedMessages = new LinkedBlockingQueue<>();
@@ -354,11 +354,6 @@ public class ContractAPIMqtt extends ProvisioningDeviceClientContract implements
             // SRS_ProvisioningAmqpOperations_07_014: [This method shall then Notify the receiveLock.]
             this.receiveLock.notifyLock();
         }
-    }
-
-    @Override
-    public void connectionEstablished()
-    {
     }
 
     @Override

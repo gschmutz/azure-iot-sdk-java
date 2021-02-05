@@ -7,7 +7,6 @@ package com.microsoft.azure.sdk.iot.provisioning.device.internal.parser;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
-import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceClientException;
 
 import java.util.Map;
 
@@ -26,6 +25,7 @@ public class ProvisioningErrorParser
     private String message;
 
     private static final String INFO = "info";
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // "info" is populated by reflection during json deserialization
     @SerializedName(INFO)
     private Map<String, String> info;
 
@@ -48,13 +48,13 @@ public class ProvisioningErrorParser
     {
         //Codes_SRS_PROVISIONING_ERROR_PARSER_34_002: [This function shall return a string containing the saved error code, message, and tracking id]
         StringBuilder errorMessage = new StringBuilder();
-        errorMessage.append("Service error: " + ((errorCode == 0) ? "null" : errorCode) + " - " + ((message == null) ? "null" : message) + " - TrackingId: " + ((trackingId == null) ? "null" : trackingId));
+        errorMessage.append("Service error: ").append((errorCode == 0) ? "null" : errorCode).append(" - ").append((message == null) ? "null" : message).append(" - TrackingId: ").append((trackingId == null) ? "null" : trackingId);
         errorMessage.append("\n");
         if (info != null)
         {
             for (String key : info.keySet())
             {
-                errorMessage.append(key + " : " + info.get(key));
+                errorMessage.append(key).append(" : ").append(info.get(key));
             }
         }
 

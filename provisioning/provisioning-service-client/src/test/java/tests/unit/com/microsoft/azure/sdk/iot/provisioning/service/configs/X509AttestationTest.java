@@ -5,7 +5,6 @@ package tests.unit.com.microsoft.azure.sdk.iot.provisioning.service.configs;
 
 import com.microsoft.azure.sdk.iot.provisioning.service.configs.*;
 import mockit.Deencapsulation;
-import mockit.Mock;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
 import org.junit.Test;
@@ -19,7 +18,7 @@ import static org.junit.Assert.*;
 public class X509AttestationTest
 {
     //PEM encoded representation of the public key certificate
-    private static String PUBLIC_CERTIFICATE_STRING =
+    private static final String PUBLIC_CERTIFICATE_STRING =
             "-----BEGIN CERTIFICATE-----\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
@@ -32,7 +31,7 @@ public class X509AttestationTest
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
             "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n" +
             "-----END CERTIFICATE-----\n";
-    private static String CA_REFERENCES_STRING = "validCertificateName";
+    private static final String CA_REFERENCES_STRING = "validCertificateName";
 
     /* SRS_X509_ATTESTATION_21_001: [The constructor shall throw IllegalArgumentException if `clientCertificates`, `rootCertificates`, and `caReferences` are null.] */
     @Test (expected = IllegalArgumentException.class)
@@ -57,14 +56,12 @@ public class X509AttestationTest
             @Mocked final X509Certificates mockedX509Certificates)
     {
         // arrange
-        X509Certificates clientCertificates = mockedX509Certificates;
-        X509Certificates rootCertificates = mockedX509Certificates;
         X509CAReferences caReferences = null;
 
         // act
         Deencapsulation.newInstance(X509Attestation.class,
                 new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                clientCertificates, rootCertificates, caReferences);
+                mockedX509Certificates, mockedX509Certificates, caReferences);
 
         // assert
     }
@@ -77,13 +74,11 @@ public class X509AttestationTest
     {
         // arrange
         X509Certificates clientCertificates = null;
-        X509Certificates rootCertificates = mockedX509Certificates;
-        X509CAReferences caReferences = mockedX509CAReferences;
 
         // act
         Deencapsulation.newInstance(X509Attestation.class,
                 new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                clientCertificates, rootCertificates, caReferences);
+                clientCertificates, mockedX509Certificates, mockedX509CAReferences);
 
         // assert
     }
@@ -94,7 +89,6 @@ public class X509AttestationTest
             @Mocked final X509Certificates mockedX509Certificates)
     {
         // arrange
-        X509Certificates clientCertificates = mockedX509Certificates;
         X509Certificates rootCertificates = null;
         X509CAReferences caReferences = null;
 
@@ -102,7 +96,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        mockedX509Certificates, rootCertificates, caReferences);
 
         // assert
         assertEquals(mockedX509Certificates, Deencapsulation.getField(x509Attestation, "clientCertificates"));
@@ -117,14 +111,13 @@ public class X509AttestationTest
     {
         // arrange
         X509Certificates clientCertificates = null;
-        X509Certificates rootCertificates = mockedX509Certificates;
         X509CAReferences caReferences = null;
 
         // act
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, mockedX509Certificates, caReferences);
 
         // assert
         assertEquals(mockedX509Certificates, Deencapsulation.getField(x509Attestation, "rootCertificates"));
@@ -140,13 +133,12 @@ public class X509AttestationTest
         // arrange
         X509Certificates clientCertificates = null;
         X509Certificates rootCertificates = null;
-        X509CAReferences caReferences = mockedX509CAReferences;
 
         // act
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, rootCertificates, mockedX509CAReferences);
 
         // assert
         assertEquals(mockedX509CAReferences, Deencapsulation.getField(x509Attestation, "caReferences"));
@@ -218,13 +210,12 @@ public class X509AttestationTest
             @Mocked final X509Certificates mockedX509Certificates)
     {
         // arrange
-        X509Certificates clientCertificates = mockedX509Certificates;
         X509Certificates rootCertificates = null;
         X509CAReferences caReferences = null;
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        mockedX509Certificates, rootCertificates, caReferences);
 
         // act
         X509Attestation x509AttestationCopy = new X509Attestation(x509Attestation);
@@ -242,12 +233,11 @@ public class X509AttestationTest
     {
         // arrange
         X509Certificates clientCertificates = null;
-        X509Certificates rootCertificates = mockedX509Certificates;
         X509CAReferences caReferences = null;
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, mockedX509Certificates, caReferences);
 
         // act
         X509Attestation x509AttestationCopy = new X509Attestation(x509Attestation);
@@ -266,11 +256,10 @@ public class X509AttestationTest
         // arrange
         X509Certificates clientCertificates = null;
         X509Certificates rootCertificates = null;
-        X509CAReferences caReferences = mockedX509CAReferences;
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, rootCertificates, mockedX509CAReferences);
 
         // act
         X509Attestation x509AttestationCopy = new X509Attestation(x509Attestation);
@@ -516,7 +505,6 @@ public class X509AttestationTest
             @Mocked final X509CertificateInfo mockedX509CertificateInfo)
     {
         // arrange
-        final X509Certificates clientCertificates = mockedX509Certificates;
         final X509Certificates rootCertificates = null;
         final X509CAReferences caReferences = null;
 
@@ -533,7 +521,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        mockedX509Certificates, rootCertificates, caReferences);
 
         // act - assert
         assertEquals(mockedX509CertificateInfo, x509Attestation.getPrimaryX509CertificateInfo());
@@ -548,7 +536,6 @@ public class X509AttestationTest
     {
         // arrange
         final X509Certificates clientCertificates = null;
-        final X509Certificates rootCertificates = mockedX509Certificates;
         final X509CAReferences caReferences = null;
 
         new NonStrictExpectations()
@@ -564,7 +551,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, mockedX509Certificates, caReferences);
 
         // act - assert
         assertEquals(mockedX509CertificateInfo, x509Attestation.getPrimaryX509CertificateInfo());
@@ -591,7 +578,6 @@ public class X509AttestationTest
             @Mocked final X509CertificateInfo mockedX509CertificateInfo)
     {
         // arrange
-        final X509Certificates clientCertificates = mockedX509Certificates;
         final X509Certificates rootCertificates = null;
         final X509CAReferences caReferences = null;
 
@@ -608,7 +594,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        mockedX509Certificates, rootCertificates, caReferences);
 
         // act - assert
         assertEquals(mockedX509CertificateInfo, x509Attestation.getSecondaryX509CertificateInfo());
@@ -620,7 +606,6 @@ public class X509AttestationTest
             @Mocked final X509Certificates mockedX509Certificates)
     {
         // arrange
-        final X509Certificates clientCertificates = mockedX509Certificates;
         final X509Certificates rootCertificates = null;
         final X509CAReferences caReferences = null;
 
@@ -635,7 +620,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        mockedX509Certificates, rootCertificates, caReferences);
 
         // act - assert
         assertNull(x509Attestation.getSecondaryX509CertificateInfo());
@@ -650,7 +635,6 @@ public class X509AttestationTest
     {
         // arrange
         final X509Certificates clientCertificates = null;
-        final X509Certificates rootCertificates = mockedX509Certificates;
         final X509CAReferences caReferences = null;
 
         new NonStrictExpectations()
@@ -666,7 +650,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, mockedX509Certificates, caReferences);
 
         // act - assert
         assertEquals(mockedX509CertificateInfo, x509Attestation.getSecondaryX509CertificateInfo());
@@ -679,7 +663,6 @@ public class X509AttestationTest
     {
         // arrange
         final X509Certificates clientCertificates = null;
-        final X509Certificates rootCertificates = mockedX509Certificates;
         final X509CAReferences caReferences = null;
 
         new NonStrictExpectations()
@@ -693,7 +676,7 @@ public class X509AttestationTest
         X509Attestation x509Attestation =
                 Deencapsulation.newInstance(X509Attestation.class,
                         new Class[]{X509Certificates.class, X509Certificates.class, X509CAReferences.class},
-                        clientCertificates, rootCertificates, caReferences);
+                        clientCertificates, mockedX509Certificates, caReferences);
 
         // act - assert
         assertNull(x509Attestation.getSecondaryX509CertificateInfo());

@@ -6,7 +6,6 @@
 package com.microsoft.azure.sdk.iot.device.auth;
 
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
-import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -56,7 +55,11 @@ public abstract class IotHubAuthenticationProvider
         this(hostname, gatewayHostname, deviceId, moduleId);
 
         this.sslContextNeedsUpdate = false;
-        this.iotHubSSLContext = new IotHubSSLContext(sslContext);
+
+        if (sslContext != null)
+        {
+            this.iotHubSSLContext = new IotHubSSLContext(sslContext);
+        }
     }
 
     public SSLContext getSSLContext() throws IOException
@@ -78,6 +81,12 @@ public abstract class IotHubAuthenticationProvider
             //Codes_SRS_AUTHENTICATIONPROVIDER_34_012: [If a CertificateException, NoSuchAlgorithmException, KeyManagementException, or KeyStoreException is thrown during this function, this function shall throw an IOException.]
             throw new IOException(e);
         }
+    }
+
+    public void setSSLContext(SSLContext sslContext)
+    {
+        this.iotHubSSLContext = new IotHubSSLContext(sslContext);
+        this.sslContextNeedsUpdate = false;
     }
 
     /**

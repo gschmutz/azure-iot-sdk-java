@@ -158,8 +158,8 @@ public class Tools
         // IoT hub only allows for bulk adding of devices at up to 100 per request, so take the provided devices iterable
         // and break it into 100 devices or smaller chunks
         List<Device> subIterable = new ArrayList<>();
-        List<Device> devicesClone = new ArrayList<>(); //create a clone of the source list so elements can be removed from it instead
-        devicesClone.addAll(devices);
+        //create a clone of the source list so elements can be removed from it instead
+        List<Device> devicesClone = new ArrayList<>(devices);
         while (devicesClone.size() > 0)
         {
             Device device = devicesClone.remove(0);
@@ -173,6 +173,7 @@ public class Tools
                 {
                     try
                     {
+                        log.debug("Registering a batch of {} devices from total of {} remaining devices", subIterable.size(), devicesClone.size() + subIterable.size());
                         addDevices(subIterable, connectionString);
                         break;
                     }
@@ -238,12 +239,11 @@ public class Tools
 
     public static URL getBulkDeviceAddUrl(IotHubConnectionString iotHubConnectionString) throws MalformedURLException
     {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("https://");
-        stringBuilder.append(iotHubConnectionString.getHostName());
-        stringBuilder.append("/devices/?api-version=");
-        stringBuilder.append(TransportUtils.IOTHUB_API_VERSION);
-        return new URL(stringBuilder.toString());
+        String stringBuilder = "https://" +
+                iotHubConnectionString.getHostName() +
+                "/devices/?api-version=" +
+                TransportUtils.IOTHUB_API_VERSION;
+        return new URL(stringBuilder);
     }
 
     public static Module addModuleWithRetry(RegistryManager registryManager, Module module) throws IotHubException, IOException, InterruptedException

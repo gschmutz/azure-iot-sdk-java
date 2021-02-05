@@ -31,7 +31,7 @@ public final class AmqpsCbsReceiverLinkHandler extends AmqpsReceiverLinkHandler
 
     // When a CBS receiver link gets a message, it has a correlation id (UUID) that can be used to map it back to whatever
     // handler is waiting on that authentication message.
-    private Map<UUID, AuthenticationMessageCallback> correlationMap = new ConcurrentHashMap<>();
+    private final Map<UUID, AuthenticationMessageCallback> correlationMap = new ConcurrentHashMap<>();
 
     AmqpsCbsReceiverLinkHandler(Receiver receiver, AmqpsLinkStateCallback amqpsLinkStateCallback)
     {
@@ -70,7 +70,7 @@ public final class AmqpsCbsReceiverLinkHandler extends AmqpsReceiverLinkHandler
             if (amqpsMessage.getApplicationProperties() != null && amqpsMessage.getProperties() != null)
             {
                 Properties properties = amqpsMessage.getProperties();
-                Object correlationId = properties.getCorrelationId();
+                UUID correlationId = (UUID) properties.getCorrelationId();
                 Map<String, Object> applicationProperties = amqpsMessage.getApplicationProperties().getValue();
 
                 if (!this.correlationMap.containsKey(correlationId))
@@ -94,7 +94,7 @@ public final class AmqpsCbsReceiverLinkHandler extends AmqpsReceiverLinkHandler
                             statusDescription = (String) applicationProperties.get(APPLICATION_PROPERTY_STATUS_DESCRIPTION);
                         }
 
-                        DeliveryState ackType = authenticationMessageCallback.handleAuthenticationResponseMessage(authenticationResponseCode, statusDescription);
+                        DeliveryState ackType = authenticationMessageCallback.handleAuthenticationResponseMessage(authenticationResponseCode, statusDescription, receiver.getSession().getConnection().getReactor());
                         amqpsMessage.acknowledge(ackType);
                         return;
                     }

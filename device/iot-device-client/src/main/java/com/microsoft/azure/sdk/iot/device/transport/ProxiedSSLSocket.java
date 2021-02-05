@@ -40,8 +40,8 @@ public class ProxiedSSLSocket extends SSLSocket
     @Delegate(excludes = ProxiedSSLSocketNonDelegatedFunctions.class)
     private SSLSocket sslSocket;
 
-    private String proxyUsername;
-    private char[] proxyPassword;
+    private final String proxyUsername;
+    private final char[] proxyPassword;
 
     private static final String HTTP = "HTTP/";
     private static final String HTTP_VERSION_1_1 = HTTP + "1.1";
@@ -96,7 +96,7 @@ public class ProxiedSSLSocket extends SSLSocket
         if (this.proxyUsername != null && this.proxyPassword != null)
         {
             String base64EncodedCredentials = new String(Base64.encodeBase64(String.format("%s:%s", this.proxyUsername, new String(this.proxyPassword)).getBytes(byteEncoding)));
-            proxyConnectMessage += String.format("Proxy-Authorization: Basic %s\r\n", base64EncodedCredentials, TransportUtils.USER_AGENT_STRING);
+            proxyConnectMessage += String.format("Proxy-Authorization: Basic %s\r\nUser-Agent: %s\r\n", base64EncodedCredentials, TransportUtils.USER_AGENT_STRING);
         }
 
         proxyConnectMessage += "\r\n";
@@ -162,11 +162,11 @@ public class ProxiedSSLSocket extends SSLSocket
     }
 
     @RequiredArgsConstructor
-    class HttpConnectResponseReader
+    static class HttpConnectResponseReader
     {
         private boolean alreadyRead = false;
-        @NonNull private InputStream inputStream;
-        @NonNull private Charset byteEncoding;
+        @NonNull private final InputStream inputStream;
+        @NonNull private final Charset byteEncoding;
 
         String readHttpConnectResponse() throws IOException
         {

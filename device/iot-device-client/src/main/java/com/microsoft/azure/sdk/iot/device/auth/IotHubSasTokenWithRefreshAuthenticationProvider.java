@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Authentication method that uses a shared access signature token and allows for token refresh.
@@ -53,7 +54,7 @@ public abstract class IotHubSasTokenWithRefreshAuthenticationProvider extends Io
 
         // Codes_SRS_MODULEAUTHENTICATIONWITHTOKENREFRESH_34_002: [This function shall return the path
         // "<hostname>/devices/<device id>/modules/<module id> url encoded with utf-8.]
-        return URLEncoder.encode(String.format("%s/devices/%s/modules/%s", hostname, deviceId, moduleId), "UTF-8");
+        return URLEncoder.encode(String.format("%s/devices/%s/modules/%s", hostname, deviceId, moduleId), StandardCharsets.UTF_8.name());
     }
 
     /**
@@ -61,7 +62,7 @@ public abstract class IotHubSasTokenWithRefreshAuthenticationProvider extends Io
      * @return false
      */
     @Override
-    public boolean isRenewalNecessary()
+    public boolean isAuthenticationProviderRenewalNecessary()
     {
         // Codes_SRS_MODULEAUTHENTICATIONWITHTOKENREFRESH_34_003: [This function shall always return false.]
         return false;
@@ -81,16 +82,11 @@ public abstract class IotHubSasTokenWithRefreshAuthenticationProvider extends Io
      * @throws TransportException If a TransportException is encountered while refreshing the sas token
      */
     @Override
-    public String getRenewedSasToken(boolean proactivelyRenew, boolean forceRenewal) throws IOException, TransportException
+    public char[] getSasToken() throws IOException, TransportException
     {
-        if (this.shouldRefreshToken(proactivelyRenew) || forceRenewal)
-        {
-            log.debug("Renewing the internal sas token");
-            // Codes_SRS_MODULEAUTHENTICATIONWITHTOKENREFRESH_34_004: [This function shall invoke shouldRefreshSasToken, and if it should refresh, this function shall refresh the sas token.]
-            this.refreshSasToken();
-        }
+        log.debug("Renewing the internal sas token");
+        this.refreshSasToken();
 
-        // Codes_SRS_MODULEAUTHENTICATIONWITHTOKENREFRESH_34_005: [This function shall return the saved sas token's string representation.]
-        return this.sasToken.toString();
+        return this.sasToken.toString().toCharArray();
     }
 }

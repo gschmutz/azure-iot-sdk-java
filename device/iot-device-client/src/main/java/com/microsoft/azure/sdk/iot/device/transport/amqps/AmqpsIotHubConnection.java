@@ -10,15 +10,15 @@ import com.microsoft.azure.proton.transport.proxy.ProxyHandler;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyHandlerImpl;
 import com.microsoft.azure.proton.transport.proxy.impl.ProxyImpl;
 import com.microsoft.azure.proton.transport.ws.impl.WebSocketImpl;
+import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
 import com.microsoft.azure.sdk.iot.device.*;
-import com.microsoft.azure.sdk.iot.device.auth.IotHubSasTokenAuthenticationProvider;
+import com.microsoft.azure.sdk.iot.device.exceptions.MultiplexingDeviceUnauthorizedException;
 import com.microsoft.azure.sdk.iot.device.exceptions.ProtocolException;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.device.transport.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.proton.Proton;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
-import org.apache.qpid.proton.amqp.messaging.Modified;
 import org.apache.qpid.proton.amqp.messaging.Rejected;
 import org.apache.qpid.proton.amqp.messaging.Released;
 import org.apache.qpid.proton.amqp.transport.DeliveryState;
@@ -31,9 +31,11 @@ import org.apache.qpid.proton.reactor.ReactorOptions;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Queue;
-import java.util.UUID;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -46,7 +48,6 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
 {
     // Timeouts
     private static final int MAX_WAIT_TO_CLOSE_CONNECTION = 20 * 1000; // 20 second timeout
-    private static final int MAX_WAIT_TO_TERMINATE_EXECUTOR = 10;
 
     // Web socket constants
     private static final String WEB_SOCKET_PATH = "/$iothub/websocket";
@@ -67,30 +68,50 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     private final Queue<Message> messagesToSend = new ConcurrentLinkedQueue<>();
     private String connectionId;
     private IotHubConnectionStatus state;
-    private String hostName;
-    private DeviceClientConfig deviceClientConfig;
+    private final String hostName;
+    private SSLContext sslContext;
+    private final boolean isWebsocketConnection;
+    private final DeviceClientConfig.AuthType authenticationType;
+    private final Set<DeviceClientConfig> deviceClientConfigs;
     private IotHubListener listener;
     private TransportException savedException;
     private boolean reconnectionScheduled = false;
+    private final Object executorServiceLock = new Object();
+    private final Map<String, Boolean> reconnectionsScheduled = new ConcurrentHashMap<>();
     private ExecutorService executorService;
+    private final ProxySettings proxySettings;
 
     // State latches are used for asynchronous open and close operations
     private CountDownLatch authenticationSessionOpenedLatch; // tracks if the authentication session has opened yet or not
-    private CountDownLatch deviceSessionsOpenedLatch; // tracks if all expected device sessions have opened yet or not
+    private Map<String, CountDownLatch> deviceSessionsOpenedLatches; // tracks if all expected device sessions have opened yet or not. Keys are deviceId's
     private CountDownLatch closeReactorLatch; // tracks if the reactor has been closed yet or not
 
     // Proton-j primitives and wrappers for the device and authentication sessions
     private Connection connection;
     private Reactor reactor;
-    private ArrayList<AmqpsSessionHandler> sessionHandlerList = new ArrayList<>();
-    private ArrayList<AmqpsSasTokenRenewalHandler> sasTokenRenwalHandlerList = new ArrayList<>();
+    private final Queue<AmqpsSessionHandler> sessionHandlers = new ConcurrentLinkedQueue<>();
+    private final Queue<AmqpsSasTokenRenewalHandler> sasTokenRenewalHandlers = new ConcurrentLinkedQueue<>();
     private AmqpsCbsSessionHandler amqpsCbsSessionHandler;
+
+    // Multiplexed device registrations and un-registrations come from a non-reactor thread, so they get queued into these
+    // queues and are executed when onTimerTask checks them.
+    private final Set<DeviceClientConfig> multiplexingClientsToRegister;
+    private final Set<DeviceClientConfig> multiplexingClientsToUnregister;
 
     public AmqpsIotHubConnection(DeviceClientConfig config)
     {
-        this.deviceClientConfig = config;
+        // This allows us to create thread safe sets despite there being no such type default in Java 7 or 8
+        this.deviceClientConfigs = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
+        this.multiplexingClientsToRegister = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
+        this.multiplexingClientsToUnregister = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
 
-        String gatewayHostname = this.deviceClientConfig.getGatewayHostname();
+        this.deviceClientConfigs.add(config);
+
+        this.isWebsocketConnection = config.isUseWebsocket();
+        this.authenticationType = config.getAuthenticationType();
+        this.proxySettings = config.getProxySettings();
+
+        String gatewayHostname = config.getGatewayHostname();
         if (gatewayHostname != null && !gatewayHostname.isEmpty())
         {
             log.debug("Gateway hostname was present in config, connecting to gateway rather than directly to hub");
@@ -99,16 +120,65 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         else
         {
             log.trace("No gateway hostname was present in config, connecting directly to hub");
-            this.hostName = this.deviceClientConfig.getIotHubHostname();
+            this.hostName = config.getIotHubHostname();
         }
 
         add(new Handshaker());
 
         this.state = IotHubConnectionStatus.DISCONNECTED;
-        log.trace("AmqpsIotHubConnection object is created successfully and will use port {}", this.deviceClientConfig.isUseWebsocket() ? WEB_SOCKET_PORT : AMQP_PORT);
+        log.trace("AmqpsIotHubConnection object is created successfully and will use port {}", this.isWebsocketConnection ? WEB_SOCKET_PORT : AMQP_PORT);
     }
 
-    public void open(Queue<DeviceClientConfig> deviceClientConfigs) throws TransportException
+    public AmqpsIotHubConnection(String hostName, boolean isWebsocketConnection, SSLContext sslContext, ProxySettings proxySettings)
+    {
+        // This allows us to create thread safe sets despite there being no such type default in Java 7 or 8
+        this.deviceClientConfigs = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
+        this.multiplexingClientsToRegister = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
+        this.multiplexingClientsToUnregister = Collections.newSetFromMap(new ConcurrentHashMap<DeviceClientConfig, Boolean>());
+
+        this.isWebsocketConnection = isWebsocketConnection;
+
+        // This constructor is only called when multiplexing, and multiplexing only supports SAS auth
+        this.authenticationType = DeviceClientConfig.AuthType.SAS_TOKEN;
+
+        this.hostName = hostName;
+        this.proxySettings = proxySettings;
+        this.sslContext = sslContext;
+
+        add(new Handshaker());
+
+        this.state = IotHubConnectionStatus.DISCONNECTED;
+        log.trace("AmqpsIotHubConnection object is created successfully and will use port {}", this.isWebsocketConnection ? WEB_SOCKET_PORT : AMQP_PORT);
+    }
+
+    public void registerMultiplexedDevice(DeviceClientConfig config)
+    {
+        if (this.state == IotHubConnectionStatus.CONNECTED)
+        {
+            // session opening logic should be done from a proton reactor thread, not this thread. This queue gets polled
+            // onTimerTask so that this client gets registered on that thread instead.
+            log.trace("Queuing the registration of device {} to an active multiplexed connection", config.getDeviceId());
+            deviceSessionsOpenedLatches.put(config.getDeviceId(), new CountDownLatch(1));
+            this.multiplexingClientsToRegister.add(config);
+        }
+
+        deviceClientConfigs.add(config);
+    }
+
+    public void unregisterMultiplexedDevice(DeviceClientConfig config)
+    {
+        if (this.state == IotHubConnectionStatus.CONNECTED)
+        {
+            // session closing logic should be done from a proton reactor thread, not this thread. This queue gets polled
+            // onTimerTask so that this client gets unregistered on that thread instead.
+            log.trace("Queuing the unregistration of device {} from an active multiplexed connection", config.getDeviceId());
+            this.multiplexingClientsToUnregister.add(config);
+        }
+
+        deviceClientConfigs.remove(config);
+    }
+
+    public void open() throws TransportException
     {
         log.debug("Opening amqp layer...");
         reconnectionScheduled = false;
@@ -120,7 +190,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         {
             for (DeviceClientConfig clientConfig : deviceClientConfigs)
             {
-                this.addDeviceSession(clientConfig, false);
+                this.createSessionHandler(clientConfig);
             }
 
             initializeStateLatches();
@@ -130,7 +200,14 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
                 this.openAsync();
 
                 log.trace("Waiting for authentication links to open...");
-                boolean authenticationSessionOpenTimedOut = !this.authenticationSessionOpenedLatch.await(this.deviceClientConfig.getAmqpOpenAuthenticationSessionTimeout(), TimeUnit.SECONDS);
+                Iterator<DeviceClientConfig> configsIterator = this.deviceClientConfigs.iterator();
+                DeviceClientConfig defaultConfig = configsIterator.hasNext() ? configsIterator.next() : null;
+                int timeoutSeconds = DeviceClientConfig.DEFAULT_AMQP_OPEN_AUTHENTICATION_SESSION_TIMEOUT_IN_SECONDS;
+                if (defaultConfig != null)
+                {
+                    timeoutSeconds = defaultConfig.getAmqpOpenAuthenticationSessionTimeout();
+                }
+                boolean authenticationSessionOpenTimedOut = !this.authenticationSessionOpenedLatch.await(timeoutSeconds, TimeUnit.SECONDS);
 
                 if (this.savedException != null)
                 {
@@ -143,7 +220,18 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
                 }
 
                 log.trace("Waiting for device sessions to open...");
-                boolean deviceSessionsOpenTimedOut = !this.deviceSessionsOpenedLatch.await(this.deviceClientConfig.getAmqpOpenDeviceSessionsTimeout(), TimeUnit.SECONDS);
+                boolean deviceSessionsOpenTimedOut = false;
+                for (DeviceClientConfig config : this.deviceClientConfigs)
+                {
+                    //Each device has its own worker session timeout according to its config settings
+                    deviceSessionsOpenTimedOut = !this.deviceSessionsOpenedLatches.get(config.getDeviceId()).await(config.getAmqpOpenDeviceSessionsTimeout(), TimeUnit.SECONDS);
+
+                    if (deviceSessionsOpenTimedOut)
+                    {
+                        // If any device session times out while opening, don't wait for the others
+                        break;
+                    }
+                }
 
                 if (this.savedException != null)
                 {
@@ -157,8 +245,10 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
             }
             catch (InterruptedException e)
             {
-                executorServicesCleanup();
-                throw new TransportException("Interrupted while waiting for links to open for AMQP connection", e);
+                this.close();
+                TransportException interruptedTransportException = new TransportException("Interrupted while waiting for links to open for AMQP connection", e);
+                interruptedTransportException.setRetryable(true);
+                throw interruptedTransportException;
             }
         }
 
@@ -180,6 +270,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         }
         catch (InterruptedException e)
         {
+            this.executorServicesCleanup();
             throw new TransportException("Interrupted while closing proton reactor", e);
         }
 
@@ -197,9 +288,8 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         String hostName = this.hostName;
         int port = AMQP_PORT;
 
-        if (this.deviceClientConfig.isUseWebsocket())
+        if (this.isWebsocketConnection)
         {
-            ProxySettings proxySettings = this.deviceClientConfig.getProxySettings();
             if (proxySettings != null)
             {
                 hostName = proxySettings.getHostname();
@@ -220,7 +310,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     {
         log.trace("Amqps reactor finalized");
         releaseLatch(authenticationSessionOpenedLatch);
-        releaseLatch(deviceSessionsOpenedLatch);
+        releaseDeviceSessionLatches();
         releaseLatch(closeReactorLatch);
 
         if (this.savedException != null)
@@ -235,32 +325,6 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         this.connection = event.getConnection();
         this.connection.setHostname(hostName);
         this.connection.open();
-
-        //Create one session per multiplexed device, or just one session if not multiplexing
-        if (this.deviceClientConfig.getAuthenticationType() == DeviceClientConfig.AuthType.SAS_TOKEN)
-        {
-            Session cbsSession = connection.session();
-
-            amqpsCbsSessionHandler = new AmqpsCbsSessionHandler(cbsSession, this);
-
-            // sas token handler list has no information that needs to be carried over after a reconnect, so clear the list and
-            // add a new handler to the list for each device session.
-            sasTokenRenwalHandlerList.clear();
-
-            // Open a device session per device, and create a sas token renewal handler for each device session
-            for (AmqpsSessionHandler amqpsSessionHandler : this.sessionHandlerList)
-            {
-                amqpsSessionHandler.setSession(connection.session());
-
-                sasTokenRenwalHandlerList.add(new AmqpsSasTokenRenewalHandler(amqpsCbsSessionHandler, amqpsSessionHandler));
-            }
-        }
-        else
-        {
-            // should only be one session since x509 doesn't support multiplexing, so just get the first in the list
-            AmqpsSessionHandler amqpsSessionHandler = this.sessionHandlerList.get(0);
-            amqpsSessionHandler.setSession(connection.session());
-        }
     }
 
     @Override
@@ -268,15 +332,34 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     {
         Transport transport = event.getTransport();
 
-        if (this.deviceClientConfig.isUseWebsocket())
+        if (this.isWebsocketConnection)
         {
             addWebSocketLayer(transport);
         }
 
         try
         {
-            SSLContext sslContext = this.deviceClientConfig.getAuthenticationProvider().getSSLContext();
-            if (this.deviceClientConfig.getAuthenticationType() == DeviceClientConfig.AuthType.SAS_TOKEN)
+            Iterator<DeviceClientConfig> configsIterator = this.deviceClientConfigs.iterator();
+            DeviceClientConfig defaultConfig = configsIterator.hasNext() ? configsIterator.next() : null;
+            SSLContext sslContext;
+            if (defaultConfig != null)
+            {
+                sslContext = defaultConfig.getAuthenticationProvider().getSSLContext();
+            }
+            else if (this.sslContext != null)
+            {
+                // This should only be hit when a user creates a multiplexing client and specifies an SSLContext
+                // that they want to use
+                sslContext = this.sslContext;
+            }
+            else
+            {
+                // This should only be hit when a user creates a multiplexing client and doesn't specify an SSLContext
+                // that they want to use
+                sslContext = new IotHubSSLContext().getSSLContext();
+            }
+
+            if (this.authenticationType == DeviceClientConfig.AuthType.SAS_TOKEN)
             {
                 Sasl sasl = transport.sasl();
                 sasl.setMechanisms("ANONYMOUS");
@@ -288,23 +371,57 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
             domain.init(SslDomain.Mode.CLIENT);
             transport.ssl(domain);
         }
-        catch (IOException e)
+        catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e)
         {
             this.savedException = new TransportException(e);
             log.error("Encountered an exception while setting ssl domain for the amqp connection", this.savedException);
         }
 
         // Adding proxy layer needs to be done after sending SSL message
-        if (this.deviceClientConfig.getProxySettings() != null)
+        if (proxySettings != null)
         {
             addProxyLayer(transport, event.getConnection().getHostname() + ":" + WEB_SOCKET_PORT);
         }
     }
 
+    // The warning is for how sessionHandlers.peek() may return null, but for x509 cases, this code only executes
+    // if one session handler is present in the list, so it is a false positive
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void onConnectionLocalOpen(Event event)
     {
         log.trace("Amqp connection opened locally");
+
+        //Create one session per multiplexed device, or just one session if not multiplexing
+        if (this.authenticationType == DeviceClientConfig.AuthType.SAS_TOKEN)
+        {
+            // The CBS ("Claims-Based-Security") session is dedicated to sending SAS tokens to the service to authenticate
+            // all of the device sessions in this AMQP connection.
+            Session cbsSession = connection.session();
+
+            amqpsCbsSessionHandler = new AmqpsCbsSessionHandler(cbsSession, this);
+
+            // sas token handler list has no information that needs to be carried over after a reconnect, so close and
+            // clear the list and add a new handler to the list for each device session.
+            for (AmqpsSasTokenRenewalHandler sasTokenRenewalHandler : this.sasTokenRenewalHandlers)
+            {
+                sasTokenRenewalHandler.close();
+            }
+            sasTokenRenewalHandlers.clear();
+
+            // Open a device session per device, and create a sas token renewal handler for each device session
+            for (AmqpsSessionHandler amqpsSessionHandler : this.sessionHandlers)
+            {
+                amqpsSessionHandler.setSession(connection.session());
+                sasTokenRenewalHandlers.add(new AmqpsSasTokenRenewalHandler(amqpsCbsSessionHandler, amqpsSessionHandler));
+            }
+        }
+        else
+        {
+            // should only be one session since x509 doesn't support multiplexing, so just get the first in the list
+            AmqpsSessionHandler amqpsSessionHandler = this.sessionHandlers.peek();
+            amqpsSessionHandler.setSession(connection.session());
+        }
     }
 
     @Override
@@ -317,7 +434,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     public void onConnectionLocalClose(Event event)
     {
         log.debug("Amqp connection closed locally, shutting down all active sessions...");
-        for (AmqpsSessionHandler amqpSessionHandler : sessionHandlerList)
+        for (AmqpsSessionHandler amqpSessionHandler : sessionHandlers)
         {
             amqpSessionHandler.closeSession();
         }
@@ -359,7 +476,10 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
 
         //Error may be on remote, and it may be local
         ErrorCondition errorCondition = event.getTransport().getRemoteCondition();
-        if (errorCondition == null)
+
+        //Sometimes the remote errorCondition object is not null, but all of its fields are null. In this case, check the local error condition
+        //for the error details.
+        if (errorCondition == null || (errorCondition.getCondition() == null && errorCondition.getDescription() == null && errorCondition.getInfo() == null))
         {
             errorCondition = event.getTransport().getCondition();
         }
@@ -374,6 +494,9 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     public void onTimerTask(Event event)
     {
         sendQueuedMessages();
+
+        checkForNewlyUnregisteredMultiplexedClientsToStop();
+        checkForNewlyRegisteredMultiplexedClientsToStart();
 
         event.getReactor().schedule(SEND_MESSAGES_PERIOD_MILLIS, this);
     }
@@ -420,7 +543,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         }
 
         //Check each session handler to see who is responsible for sending this acknowledgement
-        for (AmqpsSessionHandler sessionHandler : sessionHandlerList)
+        for (AmqpsSessionHandler sessionHandler : sessionHandlers)
         {
             if (sessionHandler.acknowledgeReceivedMessage(message, ackType))
             {
@@ -441,8 +564,16 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     @Override
     public void onDeviceSessionOpened(String deviceId)
     {
-        log.trace("Device session opened, counting down the device sessions opening latch");
-        this.deviceSessionsOpenedLatch.countDown();
+        if (this.deviceSessionsOpenedLatches.containsKey(deviceId))
+        {
+            log.trace("Device session for device {} opened, counting down the device sessions opening latch", deviceId);
+            this.deviceSessionsOpenedLatches.get(deviceId).countDown();
+            this.listener.onMultiplexedDeviceSessionEstablished(this.connectionId, deviceId);
+        }
+        else
+        {
+            log.warn("Unrecognized deviceId {} reported its device session as opened, ignoring it.", deviceId);
+        }
     }
 
     @Override
@@ -451,42 +582,75 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         log.trace("Authentication session opened, counting down the authentication session opening latch");
         this.authenticationSessionOpenedLatch.countDown();
 
-        if (this.deviceClientConfig.getAuthenticationType() == DeviceClientConfig.AuthType.SAS_TOKEN)
+        if (this.authenticationType == DeviceClientConfig.AuthType.SAS_TOKEN)
         {
-            for (AmqpsSasTokenRenewalHandler amqpsSasTokenRenewalHandler : sasTokenRenwalHandlerList)
+            if (this.isWebsocketConnection)
             {
-                try
+                // AMQPS_WS has an issue where the remote host kills the connection if 31+ multiplexed devices are all
+                // authenticated at once. To work around this, the authentications will be done at most 30 at a time.
+                // Once a given device's authentication finishes, it will trigger the next authentication
+                List<AmqpsSasTokenRenewalHandler> handlers = new ArrayList<>(sasTokenRenewalHandlers);
+                int maxInFlightAuthenticationMessages = 30;
+                for (int i = 0; i < handlers.size() - maxInFlightAuthenticationMessages; i++)
                 {
-                    amqpsSasTokenRenewalHandler.sendAuthenticationMessage(this.connection.getReactor());
+                    if (i + maxInFlightAuthenticationMessages < handlers.size())
+                    {
+                        handlers.get(i).setNextToAuthenticate(handlers.get(i + maxInFlightAuthenticationMessages));
+                    }
                 }
-                catch (TransportException e)
+
+                int min = Math.min(maxInFlightAuthenticationMessages, handlers.size());
+                for (int i = 0; i < min; i++)
                 {
-                    log.error("Failed to send CBS authentication message", e);
-                    this.savedException = e;
+                    try
+                    {
+                        // Sending the first authentication message will eventually trigger sending the second, which will trigger the third, and so on.
+                        handlers.get(i).sendAuthenticationMessage(this.connection.getReactor());
+                    }
+                    catch (TransportException e)
+                    {
+                        log.error("Failed to send CBS authentication message", e);
+                        this.savedException = e;
+                    }
+                }
+            }
+            else
+            {
+                for (AmqpsSasTokenRenewalHandler amqpsSasTokenRenewalHandler : sasTokenRenewalHandlers)
+                {
+                    try
+                    {
+                        amqpsSasTokenRenewalHandler.sendAuthenticationMessage(this.connection.getReactor());
+                    }
+                    catch (TransportException e)
+                    {
+                        log.error("Failed to send CBS authentication message", e);
+                        this.savedException = e;
+                    }
                 }
             }
         }
     }
 
     @Override
-    public void onMessageAcknowledged(Message message, DeliveryState deliveryState)
+    public void onMessageAcknowledged(Message message, DeliveryState deliveryState, String deviceId)
     {
         if (deliveryState == Accepted.getInstance())
         {
-            this.listener.onMessageSent(message, null);
+            this.listener.onMessageSent(message, deviceId, null);
         }
         else if (deliveryState instanceof Rejected)
         {
             // The message was not accepted by the server, and the reason why is found within the nested error
             TransportException ex = AmqpsExceptionTranslator.convertFromAmqpException(((Rejected) deliveryState).getError());
-            this.listener.onMessageSent(message, ex);
+            this.listener.onMessageSent(message, deviceId, ex);
         }
         else if (deliveryState == Released.getInstance())
         {
             // As per AMQP spec, this state means the message should be re-delivered to the server at a later time
             ProtocolException protocolException = new ProtocolException("Message was released by the amqp server");
             protocolException.setRetryable(true);
-            this.listener.onMessageSent(message, protocolException);
+            this.listener.onMessageSent(message, deviceId, protocolException);
         }
         else
         {
@@ -501,19 +665,74 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     }
 
     @Override
-    public void onAuthenticationFailed(TransportException transportException)
+    public void onAuthenticationFailed(String deviceId, TransportException transportException)
     {
-        this.savedException = transportException;
-        releaseLatch(authenticationSessionOpenedLatch);
-        releaseLatch(deviceSessionsOpenedLatch);
+        if (this.deviceClientConfigs.size() > 1)
+        {
+            if (this.savedException == null)
+            {
+                this.savedException = new MultiplexingDeviceUnauthorizedException("One or more multiplexed devices failed to authenticate");
+            }
+
+            if (this.savedException instanceof MultiplexingDeviceUnauthorizedException)
+            {
+                ((MultiplexingDeviceUnauthorizedException)this.savedException).addRegistrationException(deviceId, transportException);
+            }
+        }
+        else
+        {
+            this.savedException = transportException;
+        }
+
+        this.listener.onMultiplexedDeviceSessionRegistrationFailed(this.connectionId, deviceId, transportException);
+
+        if (this.deviceSessionsOpenedLatches.containsKey(deviceId))
+        {
+            this.deviceSessionsOpenedLatches.get(deviceId).countDown();
+        }
+        else
+        {
+            log.warn("Unrecognized device Id reported authentication failure, could not map it to a device session latch", transportException);
+        }
     }
 
     @Override
-    public void onSessionClosedUnexpectedly(ErrorCondition errorCondition)
+    public void onSessionClosedUnexpectedly(ErrorCondition errorCondition, String deviceId)
+    {
+        TransportException savedException = AmqpsExceptionTranslator.convertFromAmqpException(errorCondition);
+
+        if (this.deviceClientConfigs.size() > 1)
+        {
+            // When multiplexing, don't kill the connection just because a session dropped.
+            log.error("Amqp session closed unexpectedly. notifying the transport layer to start reconnection logic...", this.savedException);
+            scheduleDeviceSessionReconnection(savedException, deviceId);
+        }
+        else
+        {
+            // When not multiplexing, reconnection logic will just spin up the whole connection again.
+            this.savedException = savedException;
+            log.error("Amqp session closed unexpectedly. Closing this connection...", this.savedException);
+            this.connection.close();
+        }
+    }
+
+    @Override
+    public void onCBSSessionClosedUnexpectedly(ErrorCondition errorCondition)
     {
         this.savedException = AmqpsExceptionTranslator.convertFromAmqpException(errorCondition);
-        log.error("Amqp session closed unexpectedly. Closing this connection...", this.savedException);
+        log.error("Amqp CBS session closed unexpectedly. Closing this connection...", this.savedException);
         this.connection.close();
+    }
+
+    @Override
+    public void onSessionClosedAsExpected(String deviceId)
+    {
+        // don't want to signal Client_Close to transport layer if this is in the middle of a disconnected_retrying event
+        if (this.reconnectionsScheduled.get(deviceId) == null || !this.reconnectionsScheduled.get(deviceId))
+        {
+            log.trace("onSessionClosedAsExpected callback executed, notifying transport layer");
+            this.listener.onMultiplexedDeviceSessionLost(null, this.connectionId, deviceId);
+        }
     }
 
     private void addWebSocketLayer(Transport transport)
@@ -527,8 +746,6 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     private void addProxyLayer(Transport transport, String hostName)
     {
         log.debug("Adding proxy layer to amqp transport");
-        ProxySettings proxySettings = this.deviceClientConfig.getProxySettings();
-
         ProxyImpl proxy;
 
         if (proxySettings.getUsername() != null && proxySettings.getPassword() != null)
@@ -581,7 +798,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
 
         log.trace("Sending message over amqp ({})", message);
 
-        for (AmqpsSessionHandler sessionHandler : this.sessionHandlerList)
+        for (AmqpsSessionHandler sessionHandler : this.sessionHandlers)
         {
             sendSucceeded = sessionHandler.sendMessage(message);
 
@@ -598,7 +815,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     {
         try
         {
-            if (this.deviceClientConfig.getAuthenticationType() == DeviceClientConfig.AuthType.X509_CERTIFICATE)
+            if (this.authenticationType == DeviceClientConfig.AuthType.X509_CERTIFICATE)
             {
                 ReactorOptions options = new ReactorOptions();
                 options.setEnableSaslByDefault(false);
@@ -625,6 +842,16 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         }
     }
 
+    private void scheduleDeviceSessionReconnection(Throwable throwable, String deviceId)
+    {
+        if (this.reconnectionsScheduled.get(deviceId) == null || !this.reconnectionsScheduled.get(deviceId))
+        {
+            this.reconnectionsScheduled.put(deviceId, true);
+            log.warn("Amqp session for device {} was closed, creating a thread to notify transport layer", deviceId, throwable);
+            ReconnectionNotifier.notifyDeviceDisconnectAsync(throwable, this.listener, this.connectionId, deviceId);
+        }
+    }
+
     private void releaseLatch(CountDownLatch latch)
     {
         for (int i = 0; i < latch.getCount(); i++)
@@ -633,11 +860,19 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         }
     }
 
-    private void addDeviceSession(DeviceClientConfig deviceClientConfig, boolean afterOpen)
+    private void releaseDeviceSessionLatches()
+    {
+        for (String deviceId : this.deviceSessionsOpenedLatches.keySet())
+        {
+            releaseLatch(this.deviceSessionsOpenedLatches.get(deviceId));
+        }
+    }
+
+    private AmqpsSessionHandler createSessionHandler(DeviceClientConfig deviceClientConfig)
     {
         // Check if the device session still exists from a previous connection
         AmqpsSessionHandler amqpsSessionHandler = null;
-        for (AmqpsSessionHandler existingAmqpsSessionHandler : this.sessionHandlerList)
+        for (AmqpsSessionHandler existingAmqpsSessionHandler : this.sessionHandlers)
         {
             if (existingAmqpsSessionHandler.getDeviceId().equals(deviceClientConfig.getDeviceId()))
             {
@@ -651,20 +886,118 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         if (amqpsSessionHandler == null)
         {
             amqpsSessionHandler = new AmqpsSessionHandler(deviceClientConfig, this);
-            this.sessionHandlerList.add(amqpsSessionHandler);
+            this.sessionHandlers.add(amqpsSessionHandler);
         }
 
-        if (afterOpen)
+        return amqpsSessionHandler;
+    }
+
+    // This function is called periodically from the onTimerTask reactor callback so that any newly registered device sessions
+    // can be opened on a reactor thread instead of from one of our threads.
+    private void checkForNewlyRegisteredMultiplexedClientsToStart()
+    {
+        Iterator<DeviceClientConfig> configsToRegisterIterator = this.multiplexingClientsToRegister.iterator();
+        DeviceClientConfig configToRegister = configsToRegisterIterator.hasNext() ? configsToRegisterIterator.next() : null;
+        Set<DeviceClientConfig> configsRegisteredSuccessfully = new HashSet<>();
+        while (configToRegister != null)
         {
+            AmqpsSessionHandler amqpsSessionHandler = createSessionHandler(configToRegister);
+
+            log.trace("Adding device session for device {} to an active connection", configToRegister.getDeviceId());
             amqpsSessionHandler.setSession(this.connection.session());
+            AmqpsSasTokenRenewalHandler amqpsSasTokenRenewalHandler = new AmqpsSasTokenRenewalHandler(amqpsCbsSessionHandler, amqpsSessionHandler);
+            sasTokenRenewalHandlers.add(amqpsSasTokenRenewalHandler);
+            try
+            {
+                amqpsSasTokenRenewalHandler.sendAuthenticationMessage(this.reactor);
+
+                //Only add to this set if it was added successfully. Otherwise let it stay in the set to allow for retry
+                configsRegisteredSuccessfully.add(configToRegister);
+            }
+            catch (TransportException e)
+            {
+                log.warn("Failed to send authentication message for device {}; will try again.", amqpsSasTokenRenewalHandler.amqpsSessionHandler.getDeviceId());
+
+                //sas token renewal handler will be recreated when this function gets called again.
+                amqpsSasTokenRenewalHandler.close();
+                sasTokenRenewalHandlers.remove(amqpsSasTokenRenewalHandler);
+                return;
+            }
+
+            configToRegister = configsToRegisterIterator.hasNext() ? configsToRegisterIterator.next() : null;
         }
+
+        this.multiplexingClientsToRegister.removeAll(configsRegisteredSuccessfully);
+    }
+
+    // This function is called periodically from the onTimerTask reactor callback so that any newly registered device sessions
+    // can be opened on a reactor thread instead of from one of our threads.
+    private void checkForNewlyUnregisteredMultiplexedClientsToStop()
+    {
+        Iterator<DeviceClientConfig> configsToUnregisterIterator = this.multiplexingClientsToUnregister.iterator();
+        DeviceClientConfig configToUnregister = configsToUnregisterIterator.hasNext() ? configsToUnregisterIterator.next() : null;
+        Set<DeviceClientConfig> configsUnregisteredSuccessfully = new HashSet<>();
+        while (configToUnregister != null)
+        {
+            // Check if the device session still exists from a previous connection
+            AmqpsSessionHandler amqpsSessionHandler = null;
+            for (AmqpsSessionHandler existingAmqpsSessionHandler : this.sessionHandlers)
+            {
+                if (existingAmqpsSessionHandler.getDeviceId().equals(configToUnregister.getDeviceId()))
+                {
+                    amqpsSessionHandler = existingAmqpsSessionHandler;
+                    break;
+                }
+            }
+
+            // If a device session doesn't currently exist for this device identity
+            if (amqpsSessionHandler == null)
+            {
+                log.warn("Attempted to remove device session for device {} from multiplexed connection, but device was not currently registered.", configToUnregister.getDeviceId());
+            }
+            else
+            {
+                log.trace("Removing session handler for device {}", amqpsSessionHandler.getDeviceId());
+                this.sessionHandlers.remove(amqpsSessionHandler);
+
+                // Need to find the sas token renewal handler that is tied to this device
+                AmqpsSasTokenRenewalHandler sasTokenRenewalHandlerToRemove = null;
+                for (AmqpsSasTokenRenewalHandler existingSasTokenRenewalHandler : this.sasTokenRenewalHandlers)
+                {
+                    if (existingSasTokenRenewalHandler.amqpsSessionHandler.getDeviceId().equals(configToUnregister.getDeviceId()))
+                    {
+                        sasTokenRenewalHandlerToRemove = existingSasTokenRenewalHandler;
+
+                        // Stop the sas token renewal handler from sending any more authentication messages on behalf of this device
+                        log.trace("Closing sas token renewal handler for device {}", configToUnregister.getDeviceId());
+                        sasTokenRenewalHandlerToRemove.close();
+                        break;
+                    }
+                }
+
+                if (sasTokenRenewalHandlerToRemove != null)
+                {
+                    this.sasTokenRenewalHandlers.remove(sasTokenRenewalHandlerToRemove);
+                }
+
+                this.reconnectionsScheduled.remove(configToUnregister.getDeviceId());
+
+                log.debug("Closing device session for multiplexed device {}", configToUnregister.getDeviceId());
+                amqpsSessionHandler.closeSession();
+            }
+
+            configsUnregisteredSuccessfully.add(configToUnregister);
+            configToUnregister = configsToUnregisterIterator.hasNext() ? configsToUnregisterIterator.next() : null;
+        }
+
+        this.multiplexingClientsToUnregister.removeAll(configsUnregisteredSuccessfully);
     }
 
     private void initializeStateLatches()
     {
         this.closeReactorLatch = new CountDownLatch(REACTOR_COUNT);
 
-        if (deviceClientConfig.getAuthenticationProvider() instanceof IotHubSasTokenAuthenticationProvider)
+        if (this.authenticationType == DeviceClientConfig.AuthType.SAS_TOKEN)
         {
             log.trace("Initializing authentication link latch count to {}", CBS_SESSION_COUNT);
             this.authenticationSessionOpenedLatch = new CountDownLatch(CBS_SESSION_COUNT);
@@ -675,11 +1008,16 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
             this.authenticationSessionOpenedLatch = new CountDownLatch(0);
         }
 
-        int expectedDeviceSessionCount = sessionHandlerList.size();
-        this.deviceSessionsOpenedLatch = new CountDownLatch(expectedDeviceSessionCount);
-        log.trace("Initializing device session latch count to {}", expectedDeviceSessionCount);
+        this.deviceSessionsOpenedLatches = new ConcurrentHashMap<>();
+        for (AmqpsSessionHandler sessionHandler : sessionHandlers)
+        {
+            String deviceId = sessionHandler.getDeviceId();
+            log.trace("Initializing device session latch for device {}", deviceId);
+            this.deviceSessionsOpenedLatches.put(deviceId, new CountDownLatch(1));
+        }
     }
 
+    @SuppressWarnings("SameParameterValue") // "isRetryable" is currently always "true", but can be "false" if required.
     private void closeConnectionWithException(String errorMessage, boolean isRetryable) throws TransportException
     {
         TransportException transportException = new TransportException(errorMessage);
@@ -694,10 +1032,13 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     {
         log.trace("OpenAsnyc called for amqp connection");
 
-        if (executorService == null)
+        synchronized (this.executorServiceLock)
         {
-            log.trace("Creating new executor service");
-            executorService = Executors.newFixedThreadPool(1);
+            if (executorService == null)
+            {
+                log.trace("Creating new executor service");
+                executorService = Executors.newFixedThreadPool(1);
+            }
         }
 
         this.reactor = createReactor();
@@ -713,7 +1054,7 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         if (this.connection == null && this.reactor == null) {
             // If both the connection and reactor were never initialized, then just release the latches to signal the end of the connection closing
             releaseLatch(authenticationSessionOpenedLatch);
-            releaseLatch(deviceSessionsOpenedLatch);
+            releaseDeviceSessionLatches();
             releaseLatch(closeReactorLatch);
         }
         else if (this.connection == null)
@@ -740,45 +1081,26 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         }
     }
 
-    private void executorServicesCleanup() throws TransportException
+    private void executorServicesCleanup()
     {
-        if (this.executorService != null)
+        synchronized (this.executorServiceLock)
         {
-            log.trace("Shutdown of executor service has started");
-            this.executorService.shutdown();
-            try
+            if (this.executorService != null)
             {
-                // Wait a while for existing tasks to terminate
-                if (!this.executorService.awaitTermination(MAX_WAIT_TO_TERMINATE_EXECUTOR, TimeUnit.SECONDS))
-                {
-                    this.executorService.shutdownNow(); // Cancel currently executing tasks
-                    // Wait a while for tasks to respond to being cancelled
-                    if (!this.executorService.awaitTermination(MAX_WAIT_TO_TERMINATE_EXECUTOR, TimeUnit.SECONDS))
-                    {
-                        log.trace("Pool did not terminate");
-                    }
-                }
-
-                this.executorService = null;
-            }
-            catch (InterruptedException e)
-            {
-                log.warn("Interrupted while cleaning up executor services", e);
-                // (Re-)Cancel if current thread also interrupted
+                log.trace("Shutdown of executor service has started");
                 this.executorService.shutdownNow();
                 this.executorService = null;
-                throw new TransportException("Waited too long for the connection to close.", e);
+                log.trace("Shutdown of executor service completed");
             }
-            log.trace("Shutdown of executor service completed");
         }
     }
 
-    private class ReactorRunner implements Callable
+    private static class ReactorRunner implements Callable
     {
         private static final String THREAD_NAME = "azure-iot-sdk-ReactorRunner";
         private final IotHubReactor iotHubReactor;
         private final IotHubListener listener;
-        private String connectionId;
+        private final String connectionId;
 
         ReactorRunner(IotHubReactor iotHubReactor, IotHubListener listener, String connectionId)
         {
@@ -797,7 +1119,13 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
             }
             catch (HandlerException e)
             {
-                this.listener.onConnectionLost(new TransportException(e), connectionId);
+                TransportException transportException = new TransportException(e);
+
+                // unclassified exceptions are treated as retryable in ProtonJExceptionParser, so they should be treated
+                // the same way here. Exceptions caught here tend to be transient issues.
+                transportException.setRetryable(true);
+
+                this.listener.onConnectionLost(transportException, connectionId);
             }
 
             return null;

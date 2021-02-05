@@ -10,7 +10,6 @@ import com.microsoft.azure.sdk.iot.service.RegistryManager;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /** Manages device on IotHub - CRUD operations */
 public class DeviceManagerSample
@@ -55,13 +54,9 @@ public class DeviceManagerSample
             System.out.println("Device created: " + device.getDeviceId());
             System.out.println("Device key: " + device.getPrimaryKey());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -71,7 +66,7 @@ public class DeviceManagerSample
     {
         RegistryManager registryManager = RegistryManager.createFromConnectionString(SampleUtils.iotHubConnectionString);
         
-        Device returnDevice = null;
+        Device returnDevice;
         try
         {
             returnDevice = registryManager.getDevice(SampleUtils.deviceId);
@@ -81,13 +76,9 @@ public class DeviceManagerSample
             System.out.println("Device secondary key: " + returnDevice.getSecondaryKey());
             System.out.println("Device eTag: " + returnDevice.geteTag());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -111,13 +102,9 @@ public class DeviceManagerSample
             System.out.println("Device primary key: " + device.getPrimaryKey());
             System.out.println("Device secondary key: " + device.getSecondaryKey());
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -132,13 +119,9 @@ public class DeviceManagerSample
             registryManager.removeDevice(SampleUtils.deviceId);
             System.out.println("Device removed: " + SampleUtils.deviceId);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();

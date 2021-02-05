@@ -62,13 +62,14 @@ public class SecurityProviderX509Test
     @Mocked
     X509KeyManager mockedX509KeyManager;
 
-    class SecurityProviderX509TestImpl extends SecurityProviderX509
+    static class SecurityProviderX509TestImpl extends SecurityProviderX509
     {
-        private String cn;
-        private X509Certificate x509Certificate;
-        private Key key;
-        private Collection<X509Certificate> certificates;
+        private final String cn;
+        private final X509Certificate x509Certificate;
+        private final Key key;
+        private final Collection<X509Certificate> certificates;
 
+        @SuppressWarnings("SameParameterValue") // Since this is a constructor "cn" can be passed any value.
         SecurityProviderX509TestImpl(String cn, X509Certificate x509Certificate, Key key, Collection<X509Certificate> certificates)
         {
             this.cn = cn;
@@ -101,17 +102,6 @@ public class SecurityProviderX509Test
             return certificates;
         }
 
-        @Override
-        public String getRegistrationId() throws SecurityProviderException
-        {
-            return super.getRegistrationId();
-        }
-
-        @Override
-        public SSLContext getSSLContext() throws SecurityProviderException
-        {
-            return super.getSSLContext();
-        }
     }
 
     //SRS_SecurityClientX509_25_001: [ This method shall retrieve the commonName of the client certificate and return as registration Id. ]

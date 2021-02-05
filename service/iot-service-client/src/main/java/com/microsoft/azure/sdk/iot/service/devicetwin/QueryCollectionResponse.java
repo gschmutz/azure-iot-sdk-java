@@ -11,8 +11,8 @@ import java.util.Collection;
 
 public class QueryCollectionResponse<E>
 {
-    private Collection<E> responseElementsCollection;
-    private String continuationToken;
+    private final Collection<E> responseElementsCollection;
+    private final String continuationToken;
 
     /**
      * Constructor that takes a json string and parses it into a Collection.
@@ -21,6 +21,7 @@ public class QueryCollectionResponse<E>
      * @param continuationToken The continuation token to save
      * @throws IllegalArgumentException if responseElementsCollection is null or empty
      */
+    @SuppressWarnings("unchecked")
     QueryCollectionResponse(String jsonString, String continuationToken)
     {
         if (jsonString == null || jsonString.length() == 0)

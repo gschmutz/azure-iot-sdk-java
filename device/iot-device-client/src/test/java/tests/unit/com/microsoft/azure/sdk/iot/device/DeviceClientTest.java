@@ -4,7 +4,6 @@
 package tests.unit.com.microsoft.azure.sdk.iot.device;
 
 import com.microsoft.azure.sdk.iot.device.*;
-import com.microsoft.azure.sdk.iot.device.DeviceTwin.Device;
 import com.microsoft.azure.sdk.iot.device.DeviceTwin.PropertyCallBack;
 import com.microsoft.azure.sdk.iot.device.auth.IotHubAuthenticationProvider;
 import com.microsoft.azure.sdk.iot.device.auth.IotHubSasTokenAuthenticationProvider;
@@ -66,9 +65,9 @@ public class DeviceClientTest
     @Mocked
     ProductInfo mockedProductInfo;
 
-    private static long SEND_PERIOD_MILLIS = 10L;
-    private static long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
-    private static long RECEIVE_PERIOD_MILLIS_HTTPS = 25*60*1000; /*25 minutes*/
+    private static final long SEND_PERIOD_MILLIS = 10L;
+    private static final long RECEIVE_PERIOD_MILLIS_AMQPS = 10L;
+    private static final long RECEIVE_PERIOD_MILLIS_HTTPS = 25*60*1000; /*25 minutes*/
 
     private static final long SEND_PERIOD = 10;
     private static final long RECEIVE_PERIOD = 10;
@@ -1305,8 +1304,7 @@ public class DeviceClientTest
                 + "SharedAccessKey=adjkl234j52=";
 
         DeviceClient client = new DeviceClient(connString, mockTransportClient);
-//        Deencapsulation.setField(client, "config", mockConfig);
-//        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
         final String value = "certificatePath";
 
         // act
@@ -1528,6 +1526,7 @@ public class DeviceClientTest
         final String connString = "HostName=iothub.device.com;CredentialType=SharedAccessKey;deviceId=testdevice;"
                 + "SharedAccessKey=adjkl234j52=";
         DeviceClient client = new DeviceClient(connString, mockTransportClient);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         // act
         client.setOption("SetSendInterval", "thisIsNotALong");
@@ -1972,6 +1971,7 @@ public class DeviceClientTest
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "transportClient", mockTransportClient);
         Deencapsulation.setField(client, "ioTHubConnectionType", USE_TRANSPORTCLIENT);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -1995,6 +1995,7 @@ public class DeviceClientTest
         final int timeoutInSeconds = 10;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2026,6 +2027,7 @@ public class DeviceClientTest
         final int timeoutInSeconds = 10;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2073,6 +2075,7 @@ public class DeviceClientTest
         String timeoutInSeconds = "ten";
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2102,6 +2105,7 @@ public class DeviceClientTest
         final IotHubClientProtocol protocol = IotHubClientProtocol.HTTPS;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2128,6 +2132,7 @@ public class DeviceClientTest
         final IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2154,6 +2159,7 @@ public class DeviceClientTest
         final IotHubClientProtocol protocol = IotHubClientProtocol.MQTT_WS;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2181,6 +2187,7 @@ public class DeviceClientTest
         final DeviceClientConfig.AuthType authType = DeviceClientConfig.AuthType.X509_CERTIFICATE;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2209,6 +2216,7 @@ public class DeviceClientTest
         final int timeoutInSeconds = 10;
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2253,6 +2261,7 @@ public class DeviceClientTest
         String timeoutInSeconds = "ten";
         DeviceClient client = Deencapsulation.newInstance(DeviceClient.class);
         Deencapsulation.setField(client, "config", mockConfig);
+        Deencapsulation.setField(client, "deviceIO", mockDeviceIO);
 
         new NonStrictExpectations()
         {
@@ -2389,14 +2398,13 @@ public class DeviceClientTest
     private void deviceClientInstanceExpectation(final IotHubClientProtocol protocol)
     {
         final long receivePeriod;
-        switch (protocol)
+        if (protocol == IotHubClientProtocol.HTTPS)
         {
-            case HTTPS:
-                receivePeriod = RECEIVE_PERIOD_MILLIS_HTTPS;
-                break;
-            default:
-                receivePeriod = RECEIVE_PERIOD_MILLIS_AMQPS;
-                break;
+            receivePeriod = RECEIVE_PERIOD_MILLIS_HTTPS;
+        }
+        else
+        {
+            receivePeriod = RECEIVE_PERIOD_MILLIS_AMQPS;
         }
 
         new Expectations()

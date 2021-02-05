@@ -138,8 +138,8 @@ The following sample is generated from Intellij when set to follow the above men
 ```java
 public class ThisIsASampleClass extends C1 implements I1, I2, I3, I4, I5
 {
-    private int f1 = 1;
-    private String field2 = "";
+    private final int f1 = 1;
+    private final String field2 = "";
     private static final long WAIT_TIME_IN_SECS = 10L;
 
     /**
@@ -274,7 +274,7 @@ The header is mandatory and the body and footer are optional.
 
 Any line of the commit message cannot be longer 100 characters! This allows the message to be easier to read on GitHub as well as in various git tools.
 
-Footer should contain a [closing reference](#https://help.github.com/articles/closing-issues-using-keywords/) to an issue if any.
+Footer should contain a [closing reference](https://help.github.com/articles/closing-issues-using-keywords/) to an issue if any.
 
 **Revert**
 

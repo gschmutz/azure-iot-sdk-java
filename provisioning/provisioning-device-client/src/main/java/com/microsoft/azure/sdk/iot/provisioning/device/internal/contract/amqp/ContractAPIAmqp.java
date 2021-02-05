@@ -13,8 +13,6 @@ import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.Provi
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.exceptions.ProvisioningDeviceTransportException;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.parser.DeviceRegistrationParser;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.task.RequestData;
-import com.microsoft.azure.sdk.iot.provisioning.device.internal.task.ResponseData;
-import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProviderX509;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -22,10 +20,10 @@ import java.util.Map;
 
 public class ContractAPIAmqp extends ProvisioningDeviceClientContract
 {
-    private ProvisioningAmqpOperations provisioningAmqpOperations;
-    private boolean useWebSockets;
+    private final ProvisioningAmqpOperations provisioningAmqpOperations;
+    private final boolean useWebSockets;
 
-    private String idScope;
+    private final String idScope;
     private SaslHandler amqpSaslHandler;
 
     private void processRetryAfterValue(Map<String, Object> appProperties)

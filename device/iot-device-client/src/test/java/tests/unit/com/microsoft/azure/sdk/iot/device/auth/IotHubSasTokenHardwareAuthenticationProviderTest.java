@@ -6,7 +6,6 @@
 package tests.unit.com.microsoft.azure.sdk.iot.device.auth;
 
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.device.auth.*;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProvider;
@@ -26,6 +25,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import static org.junit.Assert.*;
 
 /**
@@ -41,15 +41,14 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
     @Mocked SSLContext mockSSLContext;
     @Mocked IotHubSasToken mockSasToken;
     @Mocked URLEncoder mockURLEncoder;
-    @Mocked Base64 mockBase64;
 
     private static final String encodingName = StandardCharsets.UTF_8.displayName();
 
-    private static String expectedDeviceId = "deviceId";
-    private static String expectedModuleId = "moduleId";
-    private static String expectedHostname = "hostname";
-    private static String expectedGatewayHostname = "gateway";
-    private static String expectedSasToken = "sasToken";
+    private static final String expectedDeviceId = "deviceId";
+    private static final String expectedModuleId = "moduleId";
+    private static final String expectedHostname = "hostname";
+    private static final String expectedGatewayHostname = "gateway";
+    private static final String expectedSasToken = "sasToken";
 
     //Tests_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_033: [This constructor shall generate and save a sas token from the security provider with the default time to live.]
     //Tests_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_034: [This constructor shall retrieve and save the ssl context from the security provider.]
@@ -58,7 +57,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
     {
         //arrange
         final String someToken = "someToken";
-        final byte[] tokenBytes= someToken.getBytes();
+        final byte[] tokenBytes = someToken.getBytes();
         new Expectations()
         {
             {
@@ -66,9 +65,6 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 result = someToken;
 
                 mockSecurityProviderTpm.signWithIdentity((byte[]) any);
-                result = tokenBytes;
-
-                Base64.encodeBase64Local((byte[]) any);
                 result = tokenBytes;
 
                 URLEncoder.encode(anyString, encodingName);
@@ -120,7 +116,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 mockSecurityProviderTpm.signWithIdentity((byte[]) any);
                 result = tokenBytes;
 
-                Base64.encodeBase64Local((byte[]) any);
+                encodeBase64((byte[]) any);
                 result = tokenBytes;
 
                 URLEncoder.encode(anyString, encodingName);
@@ -157,21 +153,15 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 result = tokenBytes;
                 times = 2;
 
-                Base64.encodeBase64Local((byte[]) any);
-                result = tokenBytes;
-
                 URLEncoder.encode(anyString, encodingName);
                 result = someToken;
-                
-                Deencapsulation.invoke(mockSasToken, "isExpired");
-                result = true;
             }
         };
 
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenHardwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, mockSecurityProviderTpm);
 
         //act
-        sasAuth.getRenewedSasToken(false, false);
+        sasAuth.getSasToken();
     }
 
     //Tests_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_036: [If the saved sas token has not expired and there is a security provider, but the sas token should be proactively renewed, the saved sas token shall be refreshed with a new token from the security provider.]
@@ -196,21 +186,15 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 result = tokenBytes;
                 times = 2;
 
-                Base64.encodeBase64Local((byte[]) any);
-                result = tokenBytes;
-
                 URLEncoder.encode(anyString, encodingName);
                 result = someToken;
-
-                Deencapsulation.invoke(mockSasToken, "isExpired");
-                result = false;
             }
         };
 
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenHardwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, mockSecurityProviderTpm);
 
         //act
-        sasAuth.getRenewedSasToken(true, false);
+        sasAuth.getSasToken();
     }
 
     @Test
@@ -234,25 +218,19 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 result = tokenBytes;
                 times = 2;
 
-                Base64.encodeBase64Local((byte[]) any);
-                result = tokenBytes;
-
                 URLEncoder.encode(anyString, encodingName);
                 result = someToken;
 
-                Deencapsulation.invoke(mockSasToken, "isExpired");
-                result = false;
-
                 new IotHubSasToken(anyString, anyString, anyString, null, anyString, anyLong);
                 result = mockSasToken;
-                times = 2; //initial creation during constructor, then again during getRenewedSasToken
+                times = 2; //initial creation during constructor, then again during getSasToken
             }
         };
 
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenHardwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, mockSecurityProviderTpm);
 
         //act
-        sasAuth.getRenewedSasToken(true, true);
+        sasAuth.getSasToken();
     }
 
     //Tests_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_005: [This function shall return the saved sas token.]
@@ -283,10 +261,10 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasAuth = new IotHubSasTokenHardwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, mockSecurityProviderTpm);
 
         //act
-        String actualSasToken = sasAuth.getRenewedSasToken(true, false);
+        char[] actualSasToken = sasAuth.getSasToken();
 
         //assert
-        assertEquals(mockSasToken.toString(), actualSasToken);
+        assertEquals(mockSasToken.toString(), String.valueOf(actualSasToken));
     }
 
     //Tests_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_001: [This function shall throw an UnsupportedOperationException.]
@@ -352,7 +330,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 mockSecurityProviderTpm.signWithIdentity((byte[]) any);
                 result = tokenBytes;
 
-                Base64.encodeBase64Local((byte[]) any);
+                encodeBase64((byte[]) any);
                 result = tokenBytes;
 
                 URLEncoder.encode(anyString, encodingName);
@@ -494,7 +472,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 mockSecurityProviderTpm.signWithIdentity((byte[]) any);
                 result = tokenBytes;
 
-                Base64.encodeBase64Local((byte[]) any);
+                encodeBase64((byte[]) any);
                 result = tokenBytes;
 
                 URLEncoder.encode(anyString, encodingName);
@@ -511,7 +489,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
         IotHubSasTokenAuthenticationProvider sasTokenAuthentication = new IotHubSasTokenHardwareAuthenticationProvider(expectedHostname, expectedGatewayHostname, expectedDeviceId, expectedModuleId, mockSecurityProviderTpm);
 
         //act
-        boolean result = sasTokenAuthentication.isRenewalNecessary();
+        boolean result = sasTokenAuthentication.isAuthenticationProviderRenewalNecessary();
 
         //assert
         assertFalse(result);
@@ -533,7 +511,7 @@ public class IotHubSasTokenHardwareAuthenticationProviderTest
                 mockSecurityProviderTpm.signWithIdentity((byte[]) any);
                 result = tokenBytes;
 
-                Base64.encodeBase64Local((byte[]) any);
+                encodeBase64((byte[]) any);
                 result = tokenBytes;
 
                 URLEncoder.encode(anyString, encodingName);

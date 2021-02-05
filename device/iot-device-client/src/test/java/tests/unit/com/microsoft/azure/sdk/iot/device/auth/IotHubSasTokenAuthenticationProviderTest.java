@@ -35,11 +35,11 @@ public class IotHubSasTokenAuthenticationProviderTest
     @Mocked
     IotHubSasToken mockSasToken;
 
-    private static String expectedDeviceId = "deviceId";
-    private static String expectedHostname = "hostname";
-    private static String expectedDeviceKey = "deviceKey";
-    private static String expectedSasToken = "sasToken";
-    private static long expectedExpiryTime = 3600;
+    private static final String expectedDeviceId = "deviceId";
+    private static final String expectedHostname = "hostname";
+    private static final String expectedDeviceKey = "deviceKey";
+    private static final String expectedSasToken = "sasToken";
+    private static final long expectedExpiryTime = 3600;
     private static final long MILLISECONDS_PER_SECOND = 1000L;
     private static final long MINIMUM_EXPIRATION_TIME_OFFSET = 1L;
 
@@ -78,7 +78,7 @@ public class IotHubSasTokenAuthenticationProviderTest
         }
 
         @Override
-        public String getRenewedSasToken(boolean proactivelyRenew, boolean forceRenewal) throws IOException
+        public char[] getSasToken() throws IOException
         {
             return null;
         }
@@ -139,7 +139,7 @@ public class IotHubSasTokenAuthenticationProviderTest
         Deencapsulation.setField(sasAuth, "sasToken", mockSasToken);
 
         //act
-        boolean isRenewalNecessary = Deencapsulation.invoke(sasAuth, "isRenewalNecessary");
+        boolean isRenewalNecessary = Deencapsulation.invoke(sasAuth, "isAuthenticationProviderRenewalNecessary");
 
         //assert
         assertTrue(isRenewalNecessary);
@@ -162,7 +162,7 @@ public class IotHubSasTokenAuthenticationProviderTest
         Deencapsulation.setField(sasAuth, "sasToken", mockSasToken);
 
         //act
-        boolean isRenewalNecessary = Deencapsulation.invoke(sasAuth, "isRenewalNecessary");
+        boolean isRenewalNecessary = Deencapsulation.invoke(sasAuth, "isAuthenticationProviderRenewalNecessary");
 
         //assert
         assertFalse(isRenewalNecessary);

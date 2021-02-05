@@ -34,7 +34,7 @@ public abstract class IotHubSasTokenAuthenticationProvider extends IotHubAuthent
     protected IotHubSasToken sasToken;
 
     public abstract boolean canRefreshToken();
-    public abstract String getRenewedSasToken(boolean proactivelyRenew, boolean forceRenewal) throws IOException, TransportException;
+    public abstract char[] getSasToken() throws IOException, TransportException;
 
     public IotHubSasTokenAuthenticationProvider(String hostname, String gatewayHostname, String deviceId, String moduleId)
     {
@@ -76,10 +76,13 @@ public abstract class IotHubSasTokenAuthenticationProvider extends IotHubAuthent
     }
 
     /**
-     * Returns true if the saved sas token needs to be manually renewed by the user
-     * @return true if the saved sas token needs to be manually renewed by the user
+     * Returns true if the this authentication provider is no longer valid. If true, users will need to create a new
+     * DeviceClient instance to get a new authentication provider. The most common case for this is if the user
+     * provides a SAS token, but no symmetric key, and that SAS token has expired. At that point, the user's client
+     * won't be able to authenticate anymore.
+     * @return true if the this authentication provider is no longer valid. False otherwise
      */
-    public boolean isRenewalNecessary()
+    public boolean isAuthenticationProviderRenewalNecessary()
     {
         //Codes_SRS_IOTHUBSASTOKENAUTHENTICATION_34_017: [If the saved sas token has expired, this function shall return true.]
         return (this.sasToken != null && this.sasToken.isExpired());
@@ -105,12 +108,9 @@ public abstract class IotHubSasTokenAuthenticationProvider extends IotHubAuthent
             long tokenStartTime = expiryTimeSeconds - this.tokenValidSecs;
             long bufferExpiryTime = getMillisecondsBeforeProactiveRenewal() / 100 + tokenStartTime;
             long currentTimeSeconds = System.currentTimeMillis() / 1000;
-            if (bufferExpiryTime < currentTimeSeconds)
-            {
-                //Codes_SRS_IOTHUBSASTOKENAUTHENTICATION_34_019: [This function shall return true if the saved token has lived for longer
-                // than its buffered threshold.]
-                return true;
-            }
+            //Codes_SRS_IOTHUBSASTOKENAUTHENTICATION_34_019: [This function shall return true if the saved token has lived for longer
+            // than its buffered threshold.]
+            return bufferExpiryTime < currentTimeSeconds;
         }
 
         //Codes_SRS_IOTHUBSASTOKENAUTHENTICATION_34_020: [This function shall return false if the saved token has not lived for longer

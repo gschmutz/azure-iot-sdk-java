@@ -27,27 +27,26 @@ import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
 import com.microsoft.azure.sdk.iot.service.devicetwin.Query;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import junit.framework.AssertionFailedError;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runners.Parameterized;
 import tests.integration.com.microsoft.azure.sdk.iot.helpers.*;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.microsoft.azure.sdk.iot.provisioning.device.ProvisioningDeviceClientStatus.PROVISIONING_DEVICE_STATUS_ASSIGNED;
 import static junit.framework.TestCase.fail;
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import static org.junit.Assert.*;
 import static tests.integration.com.microsoft.azure.sdk.iot.iothub.twin.QueryTwinTests.QUERY_TIMEOUT_MILLISECONDS;
 
+@Slf4j
 public class ProvisioningCommon extends IntegrationTest
 {
     // Called from JVM runner
@@ -116,8 +115,6 @@ public class ProvisioningCommon extends IntegrationTest
 
     public static final long MAX_TIME_TO_WAIT_FOR_REGISTRATION_MILLISECONDS = 60 * 1000;
 
-    public static final String HMAC_SHA256 = "HmacSHA256";
-
     public static final int MAX_TPM_CONNECT_RETRY_ATTEMPTS = 10;
 
     protected static final String CUSTOM_ALLOCATION_WEBHOOK_API_VERSION = "2019-03-31";
@@ -160,11 +157,8 @@ public class ProvisioningCommon extends IntegrationTest
             }
             else
             {
-                return Arrays.asList(
-                        new Object[][]
-                                {
-                                        //no tests to run for pull request builds
-                                });
+                //no tests to run for pull request builds
+                return Collections.emptyList();
             }
         }
         else
@@ -175,48 +169,23 @@ public class ProvisioningCommon extends IntegrationTest
 
     public static Collection inputsCommon()
     {
-        if (IntegrationTest.isPullRequest)
-        {
-            return Arrays.asList(
-                    new Object[][]
-                            {
-                                    {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.X509},
+        // Intentionally not doing TPM tests here. There is a separate class for running those
+        // tests in serial
+        return Arrays.asList(
+                new Object[][]
+                        {
+                                {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.X509},
+                                {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.X509},
+                                {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.X509},
+                                {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.X509},
+                                {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.X509},
 
-                                    {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.SYMMETRIC_KEY}
-
-                                    // Intentionally not doing TPM tests here. There is a separate class for running those
-                                    // tests in serial
-                            });
-        }
-        else
-        {
-            return Arrays.asList(
-                    new Object[][]
-                            {
-                                    {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.X509},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.X509},
-
-                                    {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.SYMMETRIC_KEY},
-                                    {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.SYMMETRIC_KEY}
-
-                                    // Intentionally not doing TPM tests here. There is a separate class for running those
-                                    // tests in serial
-                            });
-        }
+                                {ProvisioningDeviceClientTransportProtocol.HTTPS, AttestationType.SYMMETRIC_KEY},
+                                {ProvisioningDeviceClientTransportProtocol.AMQPS, AttestationType.SYMMETRIC_KEY},
+                                {ProvisioningDeviceClientTransportProtocol.AMQPS_WS, AttestationType.SYMMETRIC_KEY},
+                                {ProvisioningDeviceClientTransportProtocol.MQTT, AttestationType.SYMMETRIC_KEY},
+                                {ProvisioningDeviceClientTransportProtocol.MQTT_WS, AttestationType.SYMMETRIC_KEY}
+                        });
     }
 
     public ProvisioningCommon(ProvisioningDeviceClientTransportProtocol protocol, AttestationType attestationType)
@@ -226,7 +195,7 @@ public class ProvisioningCommon extends IntegrationTest
 
     public ProvisioningTestInstance testInstance;
 
-    public class ProvisioningTestInstance
+    public static class ProvisioningTestInstance
     {
         public ProvisioningDeviceClientTransportProtocol protocol;
         public AttestationType attestationType;
@@ -282,9 +251,28 @@ public class ProvisioningCommon extends IntegrationTest
                 fail("Failed to shutdown the tpm security provider emulator");
             }
         }
+
+        try
+        {
+            if (testInstance.groupId != null && !testInstance.groupId.isEmpty())
+            {
+                log.debug("Deleting enrollment group with group Id {}", testInstance.groupId);
+                testInstance.provisioningServiceClient.deleteEnrollmentGroup(testInstance.groupId);
+            }
+
+            if (testInstance.individualEnrollment != null)
+            {
+                log.debug("Deleting individual enrollment with registration Id {}", testInstance.individualEnrollment.getRegistrationId());
+                testInstance.provisioningServiceClient.deleteIndividualEnrollment(testInstance.individualEnrollment.getRegistrationId());
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to clean up enrollments after test run", e);
+        }
     }
 
-    public class ProvisioningStatus
+    public static class ProvisioningStatus
     {
         public ProvisioningDeviceClientRegistrationResult provisioningDeviceClientRegistrationInfoClient = new ProvisioningDeviceClientRegistrationResult();
         public Exception exception;
@@ -344,11 +332,7 @@ public class ProvisioningCommon extends IntegrationTest
 
     public ProvisioningStatus registerDevice(ProvisioningDeviceClientTransportProtocol protocol, SecurityProvider securityProvider, String globalEndpoint, boolean withRetry, String jsonPayload, String... expectedIotHubsToProvisionTo) throws Exception
     {
-        ArrayList<String> expectedHubsToProvisionTo = new ArrayList<>();
-        for (String iothubToProvisionTo : expectedIotHubsToProvisionTo)
-        {
-            expectedHubsToProvisionTo.add(iothubToProvisionTo);
-        }
+        ArrayList<String> expectedHubsToProvisionTo = new ArrayList<>(Arrays.asList(expectedIotHubsToProvisionTo));
         return registerDevice(protocol, securityProvider, globalEndpoint, withRetry, expectedHubsToProvisionTo, jsonPayload);
     }
 
@@ -387,14 +371,14 @@ public class ProvisioningCommon extends IntegrationTest
                 String deviceId = provisioningStatus.provisioningDeviceClientRegistrationInfoClient.getDeviceId();
                 String provisionedHubUri = provisioningStatus.provisioningDeviceClientRegistrationInfoClient.getIothubUri();
 
-                assertTrue(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Unexpected status", getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), provisioningStatus.provisioningDeviceClientRegistrationInfoClient.getProvisioningDeviceClientStatus() == ProvisioningDeviceClientStatus.PROVISIONING_DEVICE_STATUS_ASSIGNED);
+                assertSame(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Unexpected status", getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), provisioningStatus.provisioningDeviceClientRegistrationInfoClient.getProvisioningDeviceClientStatus(), PROVISIONING_DEVICE_STATUS_ASSIGNED);
                 assertFalse(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Unexpected deviceId", getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), deviceId.isEmpty());
                 assertFalse(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Unexpected uri", getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), provisionedHubUri.isEmpty());
 
                 if (jsonPayload != null && !jsonPayload.isEmpty())
                 {
                     String returnJson = provisioningStatus.provisioningDeviceClientRegistrationInfoClient.getProvisioningPayload();
-                    assertTrue(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Payload received from service is not the same values. Sent Json: " + jsonPayload + " returned json " + returnJson, getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), returnJson.equals(jsonPayload));
+                    assertEquals(CorrelationDetailsLoggingAssert.buildExceptionMessageDpsIndividualOrGroup("Payload received from service is not the same values. Sent Json: " + jsonPayload + " returned json " + returnJson, getHostName(provisioningServiceConnectionString), testInstance.groupId, testInstance.registrationId), returnJson, jsonPayload);
                 }
                 assertProvisionedIntoCorrectHub(expectedIotHubsToProvisionTo, provisionedHubUri);
                 assertProvisionedDeviceWorks(provisionedHubUri, deviceId);
@@ -552,7 +536,7 @@ public class ProvisioningCommon extends IntegrationTest
                 assertEquals(TEST_VALUE_DP, testInstance.enrollmentGroup.getInitialTwin().getDesiredProperty().get(TEST_KEY_DP));
 
                 SymmetricKeyAttestation symmetricKeyAttestation = (SymmetricKeyAttestation) attestation;
-                byte[] derivedPrimaryKey = ComputeDerivedSymmetricKey(symmetricKeyAttestation.getPrimaryKey(), testInstance.registrationId);
+                byte[] derivedPrimaryKey = SecurityProviderSymmetricKey.ComputeDerivedSymmetricKey(symmetricKeyAttestation.getPrimaryKey().getBytes(StandardCharsets.UTF_8), testInstance.registrationId);
                 securityProvider = new SecurityProviderSymmetricKey(derivedPrimaryKey, testInstance.registrationId);
             }
         }
@@ -562,7 +546,7 @@ public class ProvisioningCommon extends IntegrationTest
             if (testInstance.attestationType == AttestationType.TPM)
             {
                 securityProvider = new SecurityProviderTPMEmulator(testInstance.registrationId, MAX_TPM_CONNECT_RETRY_ATTEMPTS);
-                Attestation attestation = new TpmAttestation(new String(com.microsoft.azure.sdk.iot.deps.util.Base64.encodeBase64Local(((SecurityProviderTpm) securityProvider).getEndorsementKey())));
+                Attestation attestation = new TpmAttestation(new String(encodeBase64(((SecurityProviderTpm) securityProvider).getEndorsementKey())));
                 createTestIndividualEnrollment(attestation, allocationPolicy, reprovisionPolicy, customAllocationDefinition, iothubs, twinState, deviceCapabilities);
             }
             else if (testInstance.attestationType == AttestationType.X509)
@@ -605,14 +589,5 @@ public class ProvisioningCommon extends IntegrationTest
         testInstance.individualEnrollment.setIotHubs(iothubs);
         testInstance.individualEnrollment.setInitialTwin(twinState);
         testInstance.individualEnrollment = testInstance.provisioningServiceClient.createOrUpdateIndividualEnrollment(testInstance.individualEnrollment);
-    }
-
-    public static byte[] ComputeDerivedSymmetricKey(String masterKey, String registrationId) throws InvalidKeyException, NoSuchAlgorithmException
-    {
-        byte[] masterKeyBytes = com.microsoft.azure.sdk.iot.deps.util.Base64.decodeBase64Local(masterKey.getBytes(StandardCharsets.UTF_8));
-        SecretKeySpec secretKey = new SecretKeySpec(masterKeyBytes, HMAC_SHA256);
-        Mac hMacSha256 = Mac.getInstance(HMAC_SHA256);
-        hMacSha256.init(secretKey);
-        return com.microsoft.azure.sdk.iot.deps.util.Base64.encodeBase64Local(hMacSha256.doFinal(registrationId.getBytes()));
     }
 }

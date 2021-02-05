@@ -44,7 +44,7 @@ public abstract class AmqpsReceiverLinkHandler extends BaseHandler
     String linkCorrelationId;
     String receiverLinkAddress;
     Receiver receiverLink;
-    private AmqpsLinkStateCallback amqpsLinkStateCallback;
+    private final AmqpsLinkStateCallback amqpsLinkStateCallback;
 
     AmqpsReceiverLinkHandler(Receiver receiver, AmqpsLinkStateCallback amqpsLinkStateCallback, String linkCorrelationId)
     {
@@ -110,8 +110,8 @@ public abstract class AmqpsReceiverLinkHandler extends BaseHandler
         if (link.getLocalState() == EndpointState.ACTIVE)
         {
             log.debug("{} receiver link with link correlation id {} was closed remotely unexpectedly", getLinkInstanceType(), this.linkCorrelationId);
-            this.amqpsLinkStateCallback.onLinkClosedUnexpectedly(link.getRemoteCondition());
             link.close();
+            this.amqpsLinkStateCallback.onLinkClosedUnexpectedly(link.getRemoteCondition());
         }
         else
         {
@@ -231,7 +231,7 @@ public abstract class AmqpsReceiverLinkHandler extends BaseHandler
 
             if (properties.getContentType() != null)
             {
-                iotHubTransportMessage.setContentType(properties.getContentType().toString());
+                iotHubTransportMessage.setContentTypeFinal(properties.getContentType().toString());
             }
         }
 

@@ -12,7 +12,6 @@ import com.microsoft.azure.sdk.iot.service.auth.AuthenticationType;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /** Manages device on IotHub - CRUD operations */
 public class DeviceManagerX509Sample
@@ -56,7 +55,7 @@ public class DeviceManagerX509Sample
     {
         RegistryManager registryManager = RegistryManager.createFromConnectionString(SampleUtils.iotHubConnectionString);
 
-        Device device = null;
+        Device device;
 
         if (isSelfSigned)
         {
@@ -78,13 +77,9 @@ public class DeviceManagerX509Sample
                 System.out.println("Device secondary thumbprint: " + device.getSecondaryThumbprint());
             }
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -94,7 +89,7 @@ public class DeviceManagerX509Sample
     {
         RegistryManager registryManager = RegistryManager.createFromConnectionString(SampleUtils.iotHubConnectionString);
 
-        Device returnDevice = null;
+        Device returnDevice;
         try
         {
             returnDevice = registryManager.getDevice(SampleUtils.deviceId);
@@ -108,13 +103,9 @@ public class DeviceManagerX509Sample
                 System.out.println("Device secondary thumbprint: " + returnDevice.getSecondaryThumbprint());
             }
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -124,7 +115,7 @@ public class DeviceManagerX509Sample
     {
         RegistryManager registryManager = RegistryManager.createFromConnectionString(SampleUtils.iotHubConnectionString);
 
-        Device device = null;
+        Device device;
         if (isSelfSigned)
         {
             device = Device.createDevice(SampleUtils.deviceId, AuthenticationType.SELF_SIGNED);
@@ -148,13 +139,9 @@ public class DeviceManagerX509Sample
                 System.out.println("Device secondary thumbprint: " + device.getSecondaryThumbprint());
             }
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();
@@ -170,13 +157,9 @@ public class DeviceManagerX509Sample
 
             System.out.println("Device removed: " + SampleUtils.deviceId);
         }
-        catch (IotHubException iote)
+        catch (IotHubException | IOException iote)
         {
             iote.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
 
         registryManager.close();

@@ -51,6 +51,7 @@ public class JobResultTest
     final static String DATEFORMAT_JSON = "MMM d, yyyy h:mm:ss a";
 
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method, the params can be passed any value.
     private void JobsResponseParserExpectations(String json, TwinState twinState, MethodParser methodParser, Date date, MethodParser methodParserResponse, String jobTypeStr)
     {
         new NonStrictExpectations()
@@ -100,6 +101,7 @@ public class JobResultTest
         };
     }
 
+    @SuppressWarnings("SameParameterValue") // Since this is a helper method, the params can be passed any value.
     private void jobsResponseParserWithNullDeviceIdExpectations(String json, TwinState twinState, MethodParser methodParser, Date date, MethodParser methodParserResponse, String jobTypeStr)
     {
         new NonStrictExpectations()
@@ -372,9 +374,8 @@ public class JobResultTest
         final Date now = new Date();
 
         MethodParser methodParser = new MethodParser("methodName", null, null, new TwinCollection());
-        MethodParser methodParserResponse = mockedMethodParser;
 
-        JobsResponseParserExpectations(json, null, methodParser, now, methodParserResponse, "scheduleUpdateTwin");
+        JobsResponseParserExpectations(json, null, methodParser, now, mockedMethodParser, "scheduleUpdateTwin");
         new NonStrictExpectations()
         {
             {
@@ -390,12 +391,12 @@ public class JobResultTest
                 mockedJobsResponseParser.getCloudToDeviceMethod();
                 result = methodParser;
                 mockedJobsResponseParser.getOutcome();
-                result = methodParserResponse;
-                methodParserResponse.toJson();
+                result = mockedMethodParser;
+                mockedMethodParser.toJson();
                 result = json;
-                methodParserResponse.getStatus();
+                mockedMethodParser.getStatus();
                 result = methodReturnStatus;
-                methodParserResponse.getPayload();
+                mockedMethodParser.getPayload();
                 result = methodReturnPayload;
 
                 Deencapsulation.newInstance(JobStatistics.class, mockedJobsStatisticsParser);
@@ -428,9 +429,8 @@ public class JobResultTest
         final Date now = new Date();
 
         MethodParser methodParser = new MethodParser("methodName", null, null, new TwinCollection());
-        MethodParser methodParserResponse = mockedMethodParser;
 
-        JobsResponseParserExpectations(json, null, methodParser, now, methodParserResponse, "scheduleUpdateTwin");
+        JobsResponseParserExpectations(json, null, methodParser, now, mockedMethodParser, "scheduleUpdateTwin");
         new NonStrictExpectations()
         {
             {
@@ -446,10 +446,10 @@ public class JobResultTest
                 mockedJobsResponseParser.getCloudToDeviceMethod();
                 result = methodParser;
                 mockedJobsResponseParser.getOutcome();
-                result = methodParserResponse;
-                methodParserResponse.toJson();
+                result = mockedMethodParser;
+                mockedMethodParser.toJson();
                 result = json;
-                methodParserResponse.getStatus();
+                mockedMethodParser.getStatus();
                 result = new IllegalArgumentException();
 
                 Deencapsulation.newInstance(JobStatistics.class, mockedJobsStatisticsParser);

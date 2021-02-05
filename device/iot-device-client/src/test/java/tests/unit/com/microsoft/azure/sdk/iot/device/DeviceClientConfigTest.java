@@ -65,9 +65,9 @@ public class DeviceClientConfigTest
     @Mocked
     MessageCallback mockedMessageCallback;
 
-    private static String expectedDeviceId = "deviceId";
-    private static String expectedModuleId = "moduleId";
-    private static String expectedHostname = "hostname";
+    private static final String expectedDeviceId = "deviceId";
+    private static final String expectedModuleId = "moduleId";
+    private static final String expectedHostname = "hostname";
 
     // Tests_SRS_DEVICECLIENTCONFIG_11_002: [The function shall return the IoT Hub hostname given in the constructor.]
     @Test
@@ -86,8 +86,7 @@ public class DeviceClientConfigTest
 
         String testIotHubHostname = config.getIotHubHostname();
 
-        final String expectedIotHubHostname = iotHubHostname;
-        assertThat(testIotHubHostname, is(expectedIotHubHostname));
+        assertThat(testIotHubHostname, is(iotHubHostname));
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_34_057: [The function shall return the gateway hostname, or null if this connection string does not contain a gateway hostname.]
@@ -109,8 +108,7 @@ public class DeviceClientConfigTest
         String testIotHubHostname = config.getGatewayHostname();
 
         //assert
-        final String expectedIotHubHostname = iotHubHostname;
-        assertThat(testIotHubHostname, is(expectedIotHubHostname));
+        assertThat(testIotHubHostname, is(iotHubHostname));
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_11_007: [The function shall return the IoT Hub name given in the constructor,
@@ -160,8 +158,7 @@ public class DeviceClientConfigTest
 
         String testDeviceId = config.getDeviceId();
 
-        final String expectedDeviceId = deviceId;
-        assertThat(testDeviceId, is(expectedDeviceId));
+        assertThat(testDeviceId, is(deviceId));
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_34_047: [This function shall return the saved protocol.]
@@ -315,8 +312,7 @@ public class DeviceClientConfigTest
         config.setMessageCallback(mockCallback, context);
         MessageCallback testCallback = config.getDeviceTelemetryMessageCallback(null);
 
-        final MessageCallback expectedCallback = mockCallback;
-        assertThat(testCallback, is(expectedCallback));
+        assertThat(testCallback, is(mockCallback));
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_11_006: [The function shall set the message callback, with its associated context.]
@@ -343,8 +339,7 @@ public class DeviceClientConfigTest
         config.setMessageCallback(mockCallback, context);
         Object testContext = config.getDeviceTelemetryMessageContext(null);
 
-        final Object expectedContext = context;
-        assertThat(testContext, is(expectedContext));
+        assertThat(testContext, is(context));
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_34_045: [If the message callbacks map contains the provided inputName, this function
@@ -407,8 +402,7 @@ public class DeviceClientConfigTest
         Object testContext = config.getDeviceTelemetryMessageContext(inputName);
 
         //assert
-        final Object expectedContext = context;
-        assertThat(testContext, is(expectedContext));
+        assertThat(testContext, is(context));
     }
 
     /*
@@ -439,8 +433,7 @@ public class DeviceClientConfigTest
         config.setDeviceTwinMessageCallback(mockCallback, context);
         Object testContext = config.getDeviceTwinMessageContext();
 
-        final Object expectedContext = context;
-        assertThat(testContext, is(expectedContext));
+        assertThat(testContext, is(context));
         assertEquals(config.getDeviceTwinMessageCallback(), mockCallback);
     }
 
@@ -473,8 +466,7 @@ public class DeviceClientConfigTest
         Object testContext = config.getDeviceMethodsMessageContext();
 
 
-        final Object expectedContext = context;
-        assertThat(testContext, is(expectedContext));
+        assertThat(testContext, is(context));
         assertEquals(config.getDeviceMethodsMessageCallback(), mockCallback);
     }
 
@@ -504,13 +496,11 @@ public class DeviceClientConfigTest
         config.setDeviceTwinMessageCallback(mockCallback, dTcontext);
         Object testContextDT = config.getDeviceTwinMessageContext();
 
-        final Object expectedDTContext = dTcontext;
-        assertThat(testContextDT, is(expectedDTContext));
+        assertThat(testContextDT, is(dTcontext));
         assertEquals(config.getDeviceTwinMessageCallback(), mockCallback);
 
 
-        final Object expectedDMContext = dMContext;
-        assertThat(testContextDM, is(expectedDMContext));
+        assertThat(testContextDM, is(dMContext));
         assertEquals(config.getDeviceMethodsMessageCallback(), mockCallback);
     }
 
@@ -949,7 +939,7 @@ public class DeviceClientConfigTest
         DeviceClientConfig config = Deencapsulation.newInstance(DeviceClientConfig.class, mockIotHubConnectionString);
 
         //assert
-        assertEquals(Deencapsulation.getField(config, "retryPolicy").getClass(), new ExponentialBackoffWithJitter().getClass());
+        assertEquals(Deencapsulation.getField(config, "retryPolicy").getClass(), ExponentialBackoffWithJitter.class);
     }
 
     //Tests_SRS_DEVICECLIENTCONFIG_28_002: [This function shall throw IllegalArgumentException retryPolicy is null.]
@@ -1141,8 +1131,8 @@ public class DeviceClientConfigTest
         Map<String, Pair<MessageCallback, Object>> actualMap = Deencapsulation.getField(config, "inputChannelMessageCallbacks");
         assertNotNull(actualMap);
         assertTrue(actualMap.containsKey(inputName));
-        assertTrue(actualMap.get(inputName).getKey().equals(mockedMessageCallback));
-        assertTrue(actualMap.get(inputName).getValue().equals(context));
+        assertEquals(actualMap.get(inputName).getKey(), mockedMessageCallback);
+        assertEquals(actualMap.get(inputName).getValue(), context);
     }
 
     // Tests_SRS_DEVICECLIENTCONFIG_34_058: [If the provided inputName is already saved in the message callbacks map, and the provided callback is null, this function

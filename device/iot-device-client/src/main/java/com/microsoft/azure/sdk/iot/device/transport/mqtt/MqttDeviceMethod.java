@@ -17,29 +17,28 @@ import java.util.Map;
 @Slf4j
 public class MqttDeviceMethod extends Mqtt
 {
-    private String subscribeTopic;
-    private String responseTopic;
+    private final String subscribeTopic;
+    private final String responseTopic;
     private final Map<String, DeviceOperations> requestMap = new HashMap<>();
     private boolean isStarted = false;
 
-    private final String POUND = "#";
-    private final String BACKSLASH = "/";
-    private final String QUESTION = "?";
+    private static final String POUND = "#";
+    private static final String BACKSLASH = "/";
+    private static final String QUESTION = "?";
 
-    private final String METHOD = "$iothub/methods/";
-    private final String POST = METHOD + "POST";
-    private final String RES = METHOD + "res";
-    private final String REQ_ID = QUESTION + "$rid=";
+    private static final String METHOD = "$iothub/methods/";
+    private static final String POST = METHOD + "POST";
+    private static final String RES = METHOD + "res";
+    private static final String REQ_ID = QUESTION + "$rid=";
 
     //Placement for $iothub/methods/POST/{method name}/?$rid={request id}
-    private final int POST_TOKEN = 2;
-    private final int METHOD_TOKEN = 3;
-    private final int REQID_TOKEN = 4;
+    private static final int METHOD_TOKEN = 3;
+    private static final int REQID_TOKEN = 4;
 
-    public MqttDeviceMethod(MqttConnection mqttConnection, String connectionId, Map<Integer, Message> unacknowledgedSentMessages) throws TransportException
+    public MqttDeviceMethod(MqttConnection mqttConnection, String connectionId, Map<Integer, Message> unacknowledgedSentMessages, String deviceId) throws TransportException
     {
         //Codes_SRS_MqttDeviceMethod_25_001: [The constructor shall instantiate super class without any parameters.]
-        super(mqttConnection, null, null, connectionId, unacknowledgedSentMessages);
+        super(mqttConnection, null, null, connectionId, unacknowledgedSentMessages, deviceId);
 
         //Codes_SRS_MqttDeviceMethod_25_002: [The constructor shall create subscribe and response topics strings for device methods as per the spec.]
         this.subscribeTopic = POST + BACKSLASH + POUND;
@@ -109,12 +108,9 @@ public class MqttDeviceMethod extends Mqtt
 
                 if (requestMap.containsKey(message.getRequestId()))
                 {
-                    switch (requestMap.remove(message.getRequestId()))
+                    if (requestMap.remove(message.getRequestId()) != DeviceOperations.DEVICE_OPERATION_METHOD_RECEIVE_REQUEST)
                     {
-                        case DEVICE_OPERATION_METHOD_RECEIVE_REQUEST:
-                            break;
-                        default:
-                            throwMethodsTransportException("Mismatched request and response operation");
+                        throwMethodsTransportException("Mismatched request and response operation");
                     }
                 }
                 else

@@ -7,14 +7,10 @@
 
 package com.microsoft.azure.sdk.iot.device.transport;
 
-import com.microsoft.azure.sdk.iot.device.DeviceClientConfig;
 import com.microsoft.azure.sdk.iot.device.IotHubMessageResult;
 import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
 import com.microsoft.azure.sdk.iot.device.Message;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
-
-import java.util.Queue;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Interface of what all a Transport Connection object must do. Serves to decouple the Message Queueing of the
@@ -24,11 +20,9 @@ public interface IotHubTransportConnection
 {
     /**
      * Opens the transport connection object
-     * @param deviceClientConfigs The list of configs to use. If more than 1 configs are in this list, multiplexing
-     *                            will be used
      * @throws TransportException If any exceptions are encountered while opening the connection
      */
-    void open(Queue<DeviceClientConfig> deviceClientConfigs) throws TransportException;
+    void open() throws TransportException;
 
     /**
      * Sets a listener into the Transport Connection object. This listener updates the Transport layer of connection status

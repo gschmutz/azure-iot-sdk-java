@@ -5,7 +5,6 @@
 
 package com.microsoft.azure.sdk.iot.device.hsm;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.device.auth.SignatureProvider;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.device.hsm.parser.SignRequest;
@@ -27,10 +26,10 @@ public class HttpHsmSignatureProvider implements SignatureProvider
     private static final String ENCODING_CHARSET = "UTF-8";
     private static final String MAC = "HmacSHA256";
     private static final String DEFAULT_KEY_ID = "primary";
-    private Mac defaultSignRequestAlgo = Mac.getInstance(MAC);
+    private final Mac defaultSignRequestAlgo = Mac.getInstance(MAC);
 
-    private String apiVersion;
-    private HttpsHsmClient httpClient;
+    private final String apiVersion;
+    private final HttpsHsmClient httpClient;
 
     /**
      * Constructor for an HttpHsmSignatureProvider but using the non-default api version

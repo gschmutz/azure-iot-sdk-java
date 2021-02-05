@@ -56,15 +56,9 @@ public class ServiceClientSample
         {
             sendMultipleCommandsAndReadFromTheFeedbackReceiver();
         }
-        catch(UnsupportedEncodingException e)
+        catch(UnsupportedEncodingException | ExecutionException | InterruptedException e)
         {
            System.out.println("Exception:" + e.getMessage());
-        } catch (InterruptedException e) 
-        {
-            System.out.println("Exception:" + e.getMessage());
-        } catch (ExecutionException e) 
-        {
-            System.out.println("Exception:" + e.getMessage());
         }
 
         // Receive FileUploadNotification
@@ -163,15 +157,15 @@ public class ServiceClientSample
     
      protected static void sendMultipleCommandsAndReadFromTheFeedbackReceiver() throws ExecutionException, InterruptedException, UnsupportedEncodingException
      {
-        List<CompletableFuture<Void>> futureList = new ArrayList<CompletableFuture<Void>>();
-        Map<String, String> propertiesToSend = new HashMap<String, String>();
+        List<CompletableFuture<Void>> futureList = new ArrayList<>();
+        Map<String, String> propertiesToSend = new HashMap<>();
         String commandMessage = "Cloud to Device Message: "; 
         
         System.out.println("sendMultipleCommandsAndReadFromTheFeedbackReceiver: Send count is : " + MAX_COMMANDS_TO_SEND);
 
         for (int i = 0; i < MAX_COMMANDS_TO_SEND; i++)
         {
-            Message messageToSend = new Message(commandMessage + Integer.toString(i));
+            Message messageToSend = new Message(commandMessage + i);
             messageToSend.setDeliveryAcknowledgementFinal(DeliveryAcknowledgement.Full);
 
             // Setting standard properties
@@ -180,7 +174,7 @@ public class ServiceClientSample
 
             // Setting user properties
             propertiesToSend.clear();
-            propertiesToSend.put("key_" + Integer.toString(i), "value_" + Integer.toString(i));
+            propertiesToSend.put("key_" + i, "value_" + i);
             messageToSend.setProperties(propertiesToSend);
 
             // send the message

@@ -119,10 +119,9 @@ public class QueryTest
     public void constructorWithSQLQueryThrowsNegativePageSize() throws IllegalArgumentException
     {
         //arrange
-        final String sqlQuery = DEFAULT_QUERY;
 
         //act
-        Query testQuery = Deencapsulation.newInstance(Query.class, sqlQuery, -1, DEFAULT_QUERY_TYPE);
+        Query testQuery = Deencapsulation.newInstance(Query.class, DEFAULT_QUERY, -1, DEFAULT_QUERY_TYPE);
 
     }
 
@@ -130,10 +129,9 @@ public class QueryTest
     public void constructorWithSQLQueryThrowsZeroPageSize() throws IllegalArgumentException
     {
         //arrange
-        final String sqlQuery = DEFAULT_QUERY;
 
         //act
-        Query testQuery = Deencapsulation.newInstance(Query.class, sqlQuery, 0, DEFAULT_QUERY_TYPE);
+        Query testQuery = Deencapsulation.newInstance(Query.class, DEFAULT_QUERY, 0, DEFAULT_QUERY_TYPE);
 
     }
 
@@ -142,20 +140,18 @@ public class QueryTest
     public void constructorWithSQLQueryThrowsOnUnknownQueryType() throws IllegalArgumentException
     {
         //arrange
-        final String sqlQuery = DEFAULT_QUERY;
 
         //act
-        Query testQuery = Deencapsulation.newInstance(Query.class, sqlQuery, DEFAULT_PAGE_SIZE, QueryType.UNKNOWN);
+        Query testQuery = Deencapsulation.newInstance(Query.class, DEFAULT_QUERY, DEFAULT_PAGE_SIZE, QueryType.UNKNOWN);
     }
 
     @Test (expected = IllegalArgumentException.class)
     public void constructorWithSQLQueryThrowsOnNullQueryType() throws IllegalArgumentException
     {
         //arrange
-        final String sqlQuery = DEFAULT_QUERY;
 
         //act
-        Query testQuery = Deencapsulation.newInstance(Query.class, sqlQuery, DEFAULT_PAGE_SIZE, null);
+        Query testQuery = Deencapsulation.newInstance(Query.class, DEFAULT_QUERY, DEFAULT_PAGE_SIZE, null);
     }
 
     //Tests_SRS_QUERY_25_001: [The constructor shall validate query and save query, pagesize and request type]
@@ -783,7 +779,7 @@ public class QueryTest
         boolean hasNext = Deencapsulation.invoke(testQuery, "hasNext");
 
         //assert
-        assertEquals(true, hasNext);
+        assertTrue(hasNext);
     }
 
     //Tests_SRS_QUERY_25_021: [If no further query response is available, then this method shall continue to request query to IotHub if continuation token is available.]
@@ -813,7 +809,7 @@ public class QueryTest
         boolean hasNext = Deencapsulation.invoke(testQuery, "hasNext");
 
         //assert
-        assertEquals(false, hasNext);
+        assertFalse(hasNext);
     }
 
     @Test
@@ -847,7 +843,7 @@ public class QueryTest
         boolean hasNext = Deencapsulation.invoke(testQuery, "hasNext");
 
         //assert
-        assertEquals(false, hasNext);
+        assertFalse(hasNext);
 
         new Verifications()
         {

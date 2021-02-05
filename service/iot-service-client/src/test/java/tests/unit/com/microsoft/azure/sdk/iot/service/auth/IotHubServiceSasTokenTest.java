@@ -10,7 +10,6 @@ import com.microsoft.azure.sdk.iot.service.IotHubConnectionStringBuilder;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
 import mockit.Deencapsulation;
 import mockit.Expectations;
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import org.junit.Test;
 
 import javax.crypto.Mac;
@@ -18,7 +17,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
+import static org.apache.commons.codec.binary.Base64.encodeBase64String;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -52,7 +52,7 @@ public class IotHubServiceSasTokenTest
         String hostName = "HOSTNAME." + iotHubName;
         String sharedAccessKeyName = "ACCESSKEYNAME";
         String policyName = "SharedAccessKey";
-        String sharedAccessKey = "1234567890abcdefghijklmnopqrstvwxyz=";
+        String sharedAccessKey = encodeBase64String("1234567890abcdefghijklmnopqrstvwxyz=".getBytes());
         String connectionString = "HostName=" + hostName + ";SharedAccessKeyName=" + sharedAccessKeyName + ";" + policyName + "=" + sharedAccessKey;
 
         IotHubConnectionString iotHubConnectionString = IotHubConnectionStringBuilder.createConnectionString(connectionString);
@@ -61,17 +61,15 @@ public class IotHubServiceSasTokenTest
         new Expectations()
         {
             URLEncoder urlEncoder;
-            Base64 base64;
             System system;
-            SecretKeySpec secretKeySpec;
+            final SecretKeySpec secretKeySpec;
             Mac mac;
             {
-                urlEncoder.encode(hostName.toLowerCase(),String.valueOf(StandardCharsets.UTF_8));
-                system.currentTimeMillis();
-                Base64.decodeBase64Local(sharedAccessKey.getBytes(charset));
+                URLEncoder.encode(hostName.toLowerCase(),String.valueOf(StandardCharsets.UTF_8));
+                System.currentTimeMillis();
                 byte[] body = { 1 };
                 secretKeySpec = new SecretKeySpec(body, cryptoProvider);
-                mac.getInstance(cryptoProvider);
+                Mac.getInstance(cryptoProvider);
             }
         };
         // Act
@@ -92,7 +90,7 @@ public class IotHubServiceSasTokenTest
         String hostName = "HOSTNAME." + iotHubName;
         String sharedAccessKeyName = "ACCESSKEYNAME";
         String policyName = "SharedAccessKey";
-        String sharedAccessKey = "1234567890abcdefghijklmnopqrstvwxyz=";
+        String sharedAccessKey = encodeBase64String("1234567890abcdefghijklmnopqrstvwxyz=".getBytes());
         String connectionString = "HostName=" + hostName + ";SharedAccessKeyName=" + sharedAccessKeyName + ";" + policyName + "=" + sharedAccessKey;
         IotHubConnectionString iotHubConnectionString = IotHubConnectionStringBuilder.createConnectionString(connectionString);
 
@@ -101,9 +99,9 @@ public class IotHubServiceSasTokenTest
         String token = iotHubServiceSasToken.toString();
 
         // Assert
-        assertEquals(token.contains("SharedAccessSignature sr=hostname.b.c.d&sig="), true);
-        assertEquals(token.contains("&se="), true);
-        assertEquals(token.contains("&skn=ACCESSKEYNAME"), true);
+        assertTrue(token.contains("SharedAccessSignature sr=hostname.b.c.d&sig="));
+        assertTrue(token.contains("&se="));
+        assertTrue(token.contains("&skn=ACCESSKEYNAME"));
     }
 
     // Tests_SRS_SERVICE_SDK_JAVA_IOTHUBSERVICESASTOKEN_12_007: [The constructor shall throw Exception if building the token failed]

@@ -8,8 +8,6 @@ import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadSasUriRequest;
 import com.microsoft.azure.sdk.iot.deps.serializer.FileUploadSasUriResponse;
 import com.microsoft.azure.sdk.iot.device.DeviceClient;
 import com.microsoft.azure.sdk.iot.device.IotHubClientProtocol;
-import com.microsoft.azure.sdk.iot.device.IotHubEventCallback;
-import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
 
 import java.io.*;
@@ -25,7 +23,7 @@ import java.util.Scanner;
  */
 public class FileUploadSample
 {
-    private static List<String> fileNameList = new ArrayList<>();
+    private static final List<String> fileNameList = new ArrayList<>();
 
     /**
      * Upload file or directories to blobs using IoT Hub.
@@ -37,8 +35,8 @@ public class FileUploadSample
     public static void main(String[] args)
             throws IOException, URISyntaxException
     {
-        String connString = null;
-        String fullFileName = null;
+        String connString;
+        String fullFileName;
 
         System.out.println("Starting...");
         System.out.println("Beginning setup.");
@@ -91,7 +89,7 @@ public class FileUploadSample
         client.closeNow();
     }
 
-    private static void uploadFileOrDirectory(DeviceClient client, String fullFileName) throws FileNotFoundException, IOException, URISyntaxException {
+    private static void uploadFileOrDirectory(DeviceClient client, String fullFileName) throws IOException, URISyntaxException {
         File file = new File(fullFileName);
         if(file.isDirectory())
         {
@@ -103,8 +101,8 @@ public class FileUploadSample
         }
     }
 
-    private static void uploadFileOrDirectoryRecursive(DeviceClient client, String baseDirectory, String relativePath) throws FileNotFoundException, IOException, URISyntaxException {
-        String[] fileNameList = null;
+    private static void uploadFileOrDirectoryRecursive(DeviceClient client, String baseDirectory, String relativePath) throws IOException, URISyntaxException {
+        String[] fileNameList;
 
         File file = new File(baseDirectory, relativePath);
         if(file.isDirectory())
@@ -125,7 +123,7 @@ public class FileUploadSample
         }
     }
 
-    private static void uploadFile(DeviceClient client, String baseDirectory, String relativeFileName) throws FileNotFoundException, IOException, URISyntaxException {
+    private static void uploadFile(DeviceClient client, String baseDirectory, String relativeFileName) throws IOException, URISyntaxException {
         File file = new File(baseDirectory, relativeFileName);
         try (InputStream inputStream = new FileInputStream(file))
         {

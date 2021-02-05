@@ -3,7 +3,7 @@
 
 package com.microsoft.azure.sdk.iot.device.auth;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -14,7 +14,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
+
 /** Builds the authorization signature as a composition of functions. */
+@Slf4j
 public final class SignatureHelper
 {
     /**
@@ -52,7 +56,7 @@ public final class SignatureHelper
     public static byte[] decodeDeviceKeyBase64(String deviceKey)
     {
         // Codes_SRS_SIGNATUREHELPER_11_003: [The function shall decode the device key using Base64.]
-        return Base64.decodeBase64Local(deviceKey.getBytes());
+        return decodeBase64(deviceKey.getBytes());
     }
 
     /**
@@ -79,13 +83,11 @@ public final class SignatureHelper
             hMacSha256.init(secretKey);
             encryptedSig = hMacSha256.doFinal(sig);
         }
-        catch (NoSuchAlgorithmException e)
+        catch (NoSuchAlgorithmException | InvalidKeyException e)
         {
-            // should never happen, since the algorithm is hard-coded.
-        }
-        catch (InvalidKeyException e)
-        {
-            // should never happen, since the input key type is hard-coded.
+            // will never happen since the algorithm and input key are hard-coded. Don't want to bother
+            // adding these exceptions to the thrown exceptions of this method because of that.
+            log.error("Unexpected error encountered while encrypting signature", e);
         }
 
         return encryptedSig;
@@ -102,7 +104,7 @@ public final class SignatureHelper
     public static byte[] encodeSignatureBase64(byte[] sig)
     {
         // Codes_SRS_SIGNATUREHELPER_11_006: [The function shall encode the signature using Base64.]
-        return Base64.encodeBase64Local(sig);
+        return encodeBase64(sig);
     }
 
     /**

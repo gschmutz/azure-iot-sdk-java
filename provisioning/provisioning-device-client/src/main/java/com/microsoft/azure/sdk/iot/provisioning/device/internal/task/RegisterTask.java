@@ -7,7 +7,6 @@
 
 package com.microsoft.azure.sdk.iot.provisioning.device.internal.task;
 
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.ProvisioningDeviceClientConfig;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.contract.ProvisioningDeviceClientContract;
 import com.microsoft.azure.sdk.iot.provisioning.device.internal.contract.ResponseCallback;
@@ -32,22 +31,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
 
 import static com.microsoft.azure.sdk.iot.provisioning.device.internal.task.ContractState.DPS_REGISTRATION_RECEIVED;
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Slf4j
-public class RegisterTask implements Callable
+public class RegisterTask implements Callable<RegistrationOperationStatusParser>
 {
-    private static int MAX_WAIT_FOR_REGISTRATION_RESPONSE = 90*1000; // 90 seconds
+    private static final int MAX_WAIT_FOR_REGISTRATION_RESPONSE = 90*1000; // 90 seconds
     private static final int SLEEP_INTERVAL_WHEN_WAITING_FOR_RESPONSE = 4*1000; //4 seconds
     private static final int DEFAULT_EXPIRY_TIME_IN_SECS = 3600; // 1 Hour
     private static final String SASTOKEN_FORMAT = "SharedAccessSignature sr=%s&sig=%s&se=%s&skn=";
     private static final String THREAD_NAME = "azure-iot-sdk-RegisterTask";
-    private ResponseCallback responseCallback = null;
-    private ProvisioningDeviceClientContract provisioningDeviceClientContract = null;
-    private Authorization authorization = null;
-    private SecurityProvider securityProvider = null;
-    private ProvisioningDeviceClientConfig provisioningDeviceClientConfig = null;
+    private final ResponseCallback responseCallback;
+    private final ProvisioningDeviceClientContract provisioningDeviceClientContract;
+    private final Authorization authorization;
+    private final SecurityProvider securityProvider;
+    private final ProvisioningDeviceClientConfig provisioningDeviceClientConfig;
 
-    private class ResponseCallbackImpl implements ResponseCallback
+    private static class ResponseCallbackImpl implements ResponseCallback
     {
         @Override
         public void run(ResponseData responseData, Object context) throws ProvisioningDeviceClientException
@@ -144,9 +145,9 @@ public class RegisterTask implements Callable
         }
     }
 
-    private String constructSasToken(int expiryTime) throws ProvisioningDeviceClientException, UnsupportedEncodingException, SecurityProviderException
+    private String constructSasToken() throws ProvisioningDeviceClientException, UnsupportedEncodingException, SecurityProviderException
     {
-        if (expiryTime <= 0)
+        if (RegisterTask.DEFAULT_EXPIRY_TIME_IN_SECS <= 0)
         {
             throw new IllegalArgumentException("expiry time cannot be negative or zero");
         }
@@ -157,9 +158,9 @@ public class RegisterTask implements Callable
             throw new ProvisioningDeviceClientException("Could not construct token scope");
         }
 
-        Long expiryTimeUTC = System.currentTimeMillis() / 1000 + expiryTime;
+        Long expiryTimeUTC = System.currentTimeMillis() / 1000 + RegisterTask.DEFAULT_EXPIRY_TIME_IN_SECS;
 
-        String value = tokenScope.concat("\n" + String.valueOf(expiryTimeUTC));
+        String value = tokenScope.concat("\n" + expiryTimeUTC);
         byte[] token = null;
         if (securityProvider instanceof SecurityProviderTpm)
         {
@@ -169,14 +170,14 @@ public class RegisterTask implements Callable
         else if (securityProvider instanceof SecurityProviderSymmetricKey)
         {
             SecurityProviderSymmetricKey securityProviderSymmetricKey = (SecurityProviderSymmetricKey)securityProvider;
-            token = securityProviderSymmetricKey.HMACSignData(value.getBytes(StandardCharsets.UTF_8.displayName()), Base64.decodeBase64Local(securityProviderSymmetricKey.getSymmetricKey()));
+            token = securityProviderSymmetricKey.HMACSignData(value.getBytes(StandardCharsets.UTF_8.displayName()), decodeBase64(securityProviderSymmetricKey.getSymmetricKey()));
         }
 
         if (token == null || token.length == 0)
         {
             throw new ProvisioningDeviceSecurityException("Security client could not sign data successfully");
         }
-        byte[] base64Signature = Base64.encodeBase64Local(token);
+        byte[] base64Signature = encodeBase64(token);
         String base64UrlEncodedSignature = URLEncoder.encode(new String(base64Signature), StandardCharsets.UTF_8.displayName());
 
         //SRS_RegisterTask_25_015: [ If the provided security client is for Key then, this method shall build the SasToken of the format SharedAccessSignature sr=<tokenScope>&sig=<signature>&se=<expiryTime>&skn= and save it to authorization]
@@ -193,7 +194,7 @@ public class RegisterTask implements Callable
             2. Sign the HSM with the string of format <tokenScope>/n<expiryTime> and receive a token
             3. Encode the token to Base64 format and UrlEncode it to generate the signature. ]*/
 
-            String sasToken = this.constructSasToken(DEFAULT_EXPIRY_TIME_IN_SECS);
+            String sasToken = this.constructSasToken();
             requestData.setSasToken(sasToken);
 
             //SRS_RegisterTask_25_016: [ If the provided security client is for Key then, this method shall trigger authenticateWithProvisioningService on the contract API using the sasToken generated and wait for response and return it. ]

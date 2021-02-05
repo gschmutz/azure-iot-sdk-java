@@ -16,12 +16,12 @@ public class DeviceConnectionString
         StringBuilder stringBuilder = new StringBuilder();
         String[] tokenArray = iotHubConnectionString.split(";");
         String hostName = "";
-        for (int i = 0; i < tokenArray.length; i++)
+        for (String token : tokenArray)
         {
-            String[] keyValueArray = tokenArray[i].split("=");
+            String[] keyValueArray = token.split("=");
             if (keyValueArray[0].equals("HostName"))
             {
-                hostName =  tokenArray[i] + ';';
+                hostName = token + ';';
                 break;
             }
         }
@@ -46,12 +46,12 @@ public class DeviceConnectionString
         StringBuilder stringBuilder = new StringBuilder();
         String[] tokenArray = iotHubConnectionString.split(";");
         String hostName = "";
-        for (int i = 0; i < tokenArray.length; i++)
+        for (String token : tokenArray)
         {
-            String[] keyValueArray = tokenArray[i].split("=");
+            String[] keyValueArray = token.split("=");
             if (keyValueArray[0].equals("HostName"))
             {
-                hostName =  tokenArray[i] + ';';
+                hostName = token + ';';
                 break;
             }
         }
@@ -68,7 +68,7 @@ public class DeviceConnectionString
             stringBuilder.append(";x509=true");
         }
 
-        stringBuilder.append(";ModuleId=" + module.getId());
+        stringBuilder.append(";ModuleId=").append(module.getId());
 
         return stringBuilder.toString();
     }

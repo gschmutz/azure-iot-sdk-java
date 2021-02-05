@@ -39,9 +39,9 @@ import rx.Observable;
  */
 public class DigitalTwinsImpl implements DigitalTwins {
     /** The Retrofit service to perform REST calls. */
-    private DigitalTwinsService service;
+    private final DigitalTwinsService service;
     /** The service client containing this operation class. */
-    private IotHubGatewayServiceAPIsImpl client;
+    private final IotHubGatewayServiceAPIsImpl client;
 
     /**
      * Initializes an instance of DigitalTwins.
@@ -145,7 +145,7 @@ public class DigitalTwinsImpl implements DigitalTwins {
     }
 
     private ServiceResponseWithHeaders<Object, DigitalTwinGetDigitalTwinHeaders> getDigitalTwinDelegate(Response<ResponseBody> response) throws RestException, IOException, IllegalArgumentException {
-        return this.client.restClient().responseBuilderFactory().<Object, RestException>newInstance(this.client.serializerAdapter())
+        return this.client.restClient().responseBuilderFactory().newInstance(this.client.serializerAdapter())
                 .register(200, new TypeToken<Object>() { }.getType())
                 .buildWithHeaders(response, DigitalTwinGetDigitalTwinHeaders.class);
     }
@@ -481,7 +481,7 @@ public class DigitalTwinsImpl implements DigitalTwins {
     }
 
     private ServiceResponseWithHeaders<Object, DigitalTwinInvokeRootLevelCommandHeaders> invokeRootLevelCommandDelegate(Response<ResponseBody> response) throws RestException, IOException, IllegalArgumentException {
-        return this.client.restClient().responseBuilderFactory().<Object, RestException>newInstance(this.client.serializerAdapter())
+        return this.client.restClient().responseBuilderFactory().newInstance(this.client.serializerAdapter())
                 .register(200, new TypeToken<Object>() { }.getType())
                 .buildWithHeaders(response, DigitalTwinInvokeRootLevelCommandHeaders.class);
     }
@@ -672,7 +672,7 @@ public class DigitalTwinsImpl implements DigitalTwins {
     }
 
     private ServiceResponseWithHeaders<Object, DigitalTwinInvokeComponentCommandHeaders> invokeComponentCommandDelegate(Response<ResponseBody> response) throws RestException, IOException, IllegalArgumentException {
-        return this.client.restClient().responseBuilderFactory().<Object, RestException>newInstance(this.client.serializerAdapter())
+        return this.client.restClient().responseBuilderFactory().newInstance(this.client.serializerAdapter())
                 .register(200, new TypeToken<Object>() { }.getType())
                 .buildWithHeaders(response, DigitalTwinInvokeComponentCommandHeaders.class);
     }

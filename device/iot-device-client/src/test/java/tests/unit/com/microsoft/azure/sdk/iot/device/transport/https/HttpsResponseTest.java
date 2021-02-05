@@ -3,7 +3,6 @@
 
 package tests.unit.com.microsoft.azure.sdk.iot.device.transport.https;
 
-import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import com.microsoft.azure.sdk.iot.device.transport.https.HttpsResponse;
 import org.junit.Test;
 
@@ -33,8 +32,7 @@ public class HttpsResponseTest
                 new HttpsResponse(status, body, headerFields, errorReason);
         int testStatus = response.getStatus();
 
-        final int expectedStatus = status;
-        assertThat(testStatus, is(expectedStatus));
+        assertThat(testStatus, is(status));
     }
 
     // Tests_SRS_HTTPSRESPONSE_11_001: [The constructor shall store the input arguments so that the getters can return them later.]
@@ -51,11 +49,10 @@ public class HttpsResponseTest
                 new HttpsResponse(status, body, headerFields, errorReason);
         byte[] testBody = response.getBody();
 
-        final byte[] expectedBody = body;
-        assertThat(testBody, is(expectedBody));
+        assertThat(testBody, is(body));
 
         testBody[0] = 3;
-        assertThat(testBody, is(not(expectedBody)));
+        assertThat(testBody, is(not(body)));
     }
 
     // Tests_SRS_HTTPSRESPONSE_11_001: [The constructor shall store the input arguments so that the getters can return them later.]
@@ -137,7 +134,6 @@ public class HttpsResponseTest
                 new HttpsResponse(status, body, headerFields, errorReason);
         byte[] testErrorReason = response.getErrorReason();
 
-        final byte[] expectedErrorReason = errorReason;
-        assertThat(testErrorReason, is(expectedErrorReason));
+        assertThat(testErrorReason, is(errorReason));
     }
 }

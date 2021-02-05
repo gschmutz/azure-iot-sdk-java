@@ -21,14 +21,13 @@ import static org.apache.qpid.proton.engine.impl.ByteBufferUtils.pourAll;
 
 public class WebSocketImpl implements WebSocket, TransportLayer
 {
-    private int _maxFrameSize = (4 * 1024) + (16 * WebSocketHeader.MED_HEADER_LENGTH_MASKED);
     private boolean _tail_closed = false;
     private final ByteBuffer _inputBuffer;
     private boolean _head_closed = false;
     private final ByteBuffer _outputBuffer;
-    private ByteBuffer _pingBuffer;
-    private ByteBuffer _wsInputBuffer;
-    private ByteBuffer _temp;
+    private final ByteBuffer _pingBuffer;
+    private final ByteBuffer _wsInputBuffer;
+    private final ByteBuffer _temp;
 
     private int _underlyingOutputSize = 0;
     private int _webSocketHeaderSize = 0;
@@ -42,16 +41,17 @@ public class WebSocketImpl implements WebSocket, TransportLayer
     private String _protocol = "";
     private Map<String, String> _additionalHeaders = null;
 
-    protected Boolean _isWebSocketEnabled = false;
+    protected Boolean _isWebSocketEnabled;
 
     private WebSocketHandler.WebSocketMessageType _lastType;
     private long _lastLength;
     private long _bytesRead = 0;
-    private int _dataStart = 0;
+    private final int _dataStart = 0;
     private WebSocketFrameReadState _frameReadState = WebSocketFrameReadState.INIT_READ;
 
     public WebSocketImpl()
     {
+        int _maxFrameSize = (4 * 1024) + (16 * WebSocketHeader.MED_HEADER_LENGTH_MASKED);
         _inputBuffer = newWriteableBuffer(_maxFrameSize);
         _outputBuffer = newWriteableBuffer(_maxFrameSize);
         _pingBuffer = newWriteableBuffer(_maxFrameSize);
@@ -182,7 +182,7 @@ public class WebSocketImpl implements WebSocket, TransportLayer
 
             for (Map.Entry<String, String> entry : _additionalHeaders.entrySet())
             {
-                builder.append(entry.getKey() + ":" + entry.getValue()).append(", ");
+                builder.append(entry.getKey()).append(":").append(entry.getValue()).append(", ");
             }
 
             int lastIndex = builder.lastIndexOf(", ");
@@ -238,9 +238,6 @@ public class WebSocketImpl implements WebSocket, TransportLayer
             switch (_lastType)
             {
                 case WEB_SOCKET_MESSAGE_TYPE_UNKNOWN:
-                    _wsInputBuffer.position(_wsInputBuffer.limit());
-                    _wsInputBuffer.limit(_wsInputBuffer.capacity());
-                    break;
                 case WEB_SOCKET_MESSAGE_TYPE_CHUNK:
                     _wsInputBuffer.position(_wsInputBuffer.limit());
                     _wsInputBuffer.limit(_wsInputBuffer.capacity());
@@ -481,12 +478,8 @@ public class WebSocketImpl implements WebSocket, TransportLayer
             if (_isWebSocketEnabled)
             {
                 _head_closed = true;
-                _underlyingInput.close_tail();
             }
-            else
-            {
-                _underlyingInput.close_tail();
-            }
+            _underlyingInput.close_tail();
         }
 
         @Override

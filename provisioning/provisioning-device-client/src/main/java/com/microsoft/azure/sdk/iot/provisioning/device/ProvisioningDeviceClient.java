@@ -15,6 +15,7 @@ import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProvider;
 import com.microsoft.azure.sdk.iot.provisioning.device.AdditionalData;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,9 +24,9 @@ public class ProvisioningDeviceClient
 {
     private static final int MAX_THREADS_TO_RUN = 1;
 
-    private ProvisioningDeviceClientConfig provisioningDeviceClientConfig;
-    private ProvisioningDeviceClientContract provisioningDeviceClientContract;
-    private ExecutorService executor;
+    private final ProvisioningDeviceClientConfig provisioningDeviceClientConfig;
+    private final ProvisioningDeviceClientContract provisioningDeviceClientContract;
+    private final ExecutorService executor;
 
     /**
      * Creates an instance of ProvisioningDeviceClient
@@ -101,7 +102,7 @@ public class ProvisioningDeviceClient
 
         //SRS_ProvisioningDeviceClient_25_010: [ This method shall start the executor with the ProvisioningTask. ]
         log.debug("Starting provisioning thread...");
-        ProvisioningTask provisioningTask = new ProvisioningTask(this.provisioningDeviceClientConfig, this.provisioningDeviceClientContract);
+        Callable<Object> provisioningTask = new ProvisioningTask(this.provisioningDeviceClientConfig, this.provisioningDeviceClientContract);
         executor.submit(provisioningTask);
     }
 

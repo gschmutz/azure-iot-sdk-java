@@ -6,7 +6,6 @@ package com.microsoft.azure.sdk.iot.deps.serializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.internal.LinkedTreeMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +20,8 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @deprecated As of release 0.4.0, replaced by {@link com.microsoft.azure.sdk.iot.deps.twin.TwinCollection}
  */
+// Unchecked casts of Maps to Map<String, Object> are safe as long as service is returning valid twin json payloads. Since all json keys are Strings, all maps must be Map<String, Object>
+@SuppressWarnings("unchecked")
 @Deprecated
 public class TwinProperty
 {
@@ -30,12 +31,12 @@ public class TwinProperty
     private static final String LAST_UPDATE_TAG = "$lastUpdated";
     private static final String LAST_UPDATE_VERSION_TAG = "$lastUpdatedVersion";
 
-    private Object lock = new Object();
+    private final Object lock = new Object();
 
-    private class Property
+    private static class Property
     {
-        private Object value;
-        private TwinMetadata metadata;
+        private final Object value;
+        private final TwinMetadata metadata;
         private Property(Object val, Integer propertyVersion)
         {
             this.value = val;
@@ -43,7 +44,7 @@ public class TwinProperty
         }
     }
 
-    private ConcurrentMap<String, Property> property = new ConcurrentHashMap<>();;
+    private final ConcurrentMap<String, Property> property = new ConcurrentHashMap<>();
     private Integer version;
     private Boolean reportMetadata;
 
@@ -59,13 +60,14 @@ public class TwinProperty
         this.reportMetadata = true;
     }
 
+    @SuppressWarnings("SameParameterValue") // Value for "propertyVersion" is currently always null, but this method can be used generically as well.
     protected Boolean addProperty(String key, Object value, Integer propertyVersion) throws IllegalArgumentException
     {
         /* Codes_SRS_TWINPARSER_21_059: [The updateDesiredProperty shall only change properties in the map, keep the others as is.] */
         /* Codes_SRS_TWINPARSER_21_061: [All `key` and `value` in property shall be case sensitive.] */
         /* Codes_SRS_TWINPARSER_21_060: [The updateReportedProperty shall only change properties in the map, keep the others as is.] */
         /* Codes_SRS_TWINPARSER_21_062: [All `key` and `value` in property shall be case sensitive.] */
-        Boolean change = false;
+        boolean change = false;
 
         if(key == null)
         {
@@ -96,10 +98,7 @@ public class TwinProperty
         {
             /* Codes_SRS_TWINPARSER_21_078: [If any `value` is null, the updateDesiredProperty shall delete it from the collection and report on Json.] */
             /* Codes_SRS_TWINPARSER_21_084: [If any `value` is null, the updateReportedProperty shall delete it from the collection and report on Json.] */
-            if(property.containsKey(key))
-            {
-                property.remove(key);
-            }
+            property.remove(key);
             change = true;
         }
         else
@@ -187,7 +186,7 @@ public class TwinProperty
 
     protected TwinMetadata getMetadata(String key)
     {
-        TwinMetadata twinMetadata = null;
+        TwinMetadata twinMetadata;
 
         synchronized (lock)
         {
@@ -208,7 +207,7 @@ public class TwinProperty
     {
         /* Codes_SRS_TWINPARSER_21_050: [The getDesiredPropertyMap shall return a map with all desired property key value pairs.] */
         /* Codes_SRS_TWINPARSER_21_051: [The getReportedPropertyMap shall return a map with all reported property key value pairs.] */
-        Map<String, Object> propertyMap = null;
+        Map<String, Object> propertyMap;
 
         synchronized (lock)
         {
@@ -222,14 +221,7 @@ public class TwinProperty
                 for (Map.Entry<String, Property> entry : property.entrySet())
                 {
                     Object value = entry.getValue().value;
-                    if (value == null)
-                    {
-                        propertyMap.put(entry.getKey(), null);
-                    }
-                    else
-                    {
-                        propertyMap.put(entry.getKey(), value);
-                    }
+                    propertyMap.put(entry.getKey(), value);
                 }
             }
         }
@@ -243,7 +235,7 @@ public class TwinProperty
 
     protected Object get(String key)
     {
-        Object result = null;
+        Object result;
 
         synchronized (lock)
         {
@@ -295,8 +287,8 @@ public class TwinProperty
     protected void update(Map<String, Object> jsonTree,
                        TwinChangedCallback onCallback) throws IllegalArgumentException
     {
-        Map<String, Object> diffField = new HashMap<>();
-        Map<String, Object> diffMetadata = new HashMap<>();
+        Map<String, Object> diffField;
+        Map<String, Object> diffMetadata;
 
         try
         {
@@ -374,7 +366,7 @@ public class TwinProperty
         {
             if (entry.getKey().equals(VERSION_TAG))
             {
-                version = new Integer( (int) ((double) entry.getValue()));
+                version = (int) ((double) entry.getValue());
                 break;
             }
         }

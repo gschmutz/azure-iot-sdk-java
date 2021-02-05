@@ -11,7 +11,6 @@ import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProviderX509;
 import com.microsoft.azure.sdk.iot.provisioning.security.exceptions.SecurityProviderException;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -35,13 +34,12 @@ public class SecurityProviderX509Cert extends SecurityProviderX509
     private static final String COMMA = ",";
     private static final String EQUALS = "=";
     private final String commonNameLeaf;
-    private X509Certificate leafCertificatePublic;
-    private Key leafPrivateKey;
-    private Collection<X509Certificate> signerCertificates;
+    private final X509Certificate leafCertificatePublic;
+    private final Key leafPrivateKey;
+    private final Collection<X509Certificate> signerCertificates;
 
-    private String leafCertificatePublicPem;
-    private String leafPrivateKeyPem;
-    private Collection<String> signerCertificatesPem;
+    private final String leafCertificatePublicPem;
+    private final Collection<String> signerCertificatesPem;
     /**
      * Constructor to build the DICE certs from the simulator
      */
@@ -58,13 +56,12 @@ public class SecurityProviderX509Cert extends SecurityProviderX509
         }
 
         this.leafCertificatePublicPem = leafPublicPem;
-        this.leafPrivateKeyPem = leafPrivateKey;
         this.signerCertificatesPem = signerCertificates;
         this.signerCertificates = new LinkedList<>();
         try
         {
             this.leafCertificatePublic = SecurityProviderX509Cert.parsePublicKeyCertificate(leafCertificatePublicPem);
-            this.leafPrivateKey = SecurityProviderX509Cert.parsePrivateKey(leafPrivateKeyPem);
+            this.leafPrivateKey = SecurityProviderX509Cert.parsePrivateKey(leafPrivateKey);
             for (String cert : signerCertificates)
             {
                 this.signerCertificates.add(SecurityProviderX509Cert.parsePublicKeyCertificate(cert));

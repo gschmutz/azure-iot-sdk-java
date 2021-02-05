@@ -22,7 +22,7 @@ public final class IotHubSasToken
     /** Components of the SAS token. */
     private String signature = null;
     /** The time, as a UNIX timestamp, before which the token is valid. */
-    private long expiryTime = 0L;
+    private final long expiryTime;
     /**
      * The URI for a connection from a device to an IoT Hub. Does not include a
      * protocol.
@@ -168,7 +168,7 @@ public final class IotHubSasToken
         }
         else
         {
-            return null;
+            throw new IllegalArgumentException("SasToken hasn't been initialized");
         }
     }
 
@@ -190,12 +190,9 @@ public final class IotHubSasToken
             if(this.sasToken.startsWith("SharedAccessSignature"))
             {
                 Map<String, String> fieldValues = extractFieldValues(this.sasToken);
-                if(fieldValues.containsKey(ExpiryTimeFieldKey)
+                return fieldValues.containsKey(ExpiryTimeFieldKey)
                         && fieldValues.containsKey(SignatureFieldKey)
-                        && fieldValues.containsKey(ResourceURIFieldKey))
-                {
-                    return true;
-                }
+                        && fieldValues.containsKey(ResourceURIFieldKey);
             }
         }
         return false;
@@ -228,10 +225,10 @@ public final class IotHubSasToken
     }
 
     /**
-     * Return the expiry time for the provided sasToken in seconds.
+     * Return the expiry time for the provided sasToken in seconds since the UNIX epoch.
      *
-     * @param sasToken the token to return the expiry time
-     * @return a long with the expiry time in seconds.
+     * @param sasToken the token to return the expiry time for.
+     * @return the expiry time for the provided sasToken in seconds since the UNIX epoch
      */
     static Long getExpiryTimeFromToken(String sasToken)
     {
@@ -250,7 +247,7 @@ public final class IotHubSasToken
             throw new IllegalArgumentException("Malformed signature");
         }
 
-        Map<String, String> parsedFields = new HashMap<String, String>();
+        Map<String, String> parsedFields = new HashMap<>();
         String[] fields = lines[SASTokenFieldSegmentIndex].trim().split(FieldPairSeparator);
 
         for (String field : fields)

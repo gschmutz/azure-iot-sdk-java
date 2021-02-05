@@ -34,7 +34,7 @@ public abstract class AmqpsSenderLinkHandler extends BaseHandler
     String senderLinkAddress;
     Sender senderLink;
     private long nextTag = 0;
-    private AmqpsLinkStateCallback amqpsLinkStateCallback;
+    private final AmqpsLinkStateCallback amqpsLinkStateCallback;
 
     AmqpsSenderLinkHandler(Sender sender, AmqpsLinkStateCallback amqpsLinkStateCallback, String linkCorrelationId)
     {
@@ -77,7 +77,7 @@ public abstract class AmqpsSenderLinkHandler extends BaseHandler
         Message acknowledgedIotHubMessage = this.inProgressMessages.remove(deliveryTag);
         if (acknowledgedIotHubMessage == null)
         {
-            log.warn("Received acknowledgement for a message that this sender did not send", deliveryTag);
+            log.warn("Received acknowledgement for a message with delivery tag {} that this sender did not send", deliveryTag);
         }
         else
         {
@@ -112,8 +112,8 @@ public abstract class AmqpsSenderLinkHandler extends BaseHandler
         if (link.getLocalState() == EndpointState.ACTIVE)
         {
             log.debug("{} sender link with link correlation id {} was closed remotely unexpectedly", getLinkInstanceType(), this.linkCorrelationId);
-            this.amqpsLinkStateCallback.onLinkClosedUnexpectedly(link.getRemoteCondition());
             link.close();
+            this.amqpsLinkStateCallback.onLinkClosedUnexpectedly(link.getRemoteCondition());
         }
         else
         {
@@ -207,14 +207,14 @@ public abstract class AmqpsSenderLinkHandler extends BaseHandler
             }
 
             log.trace("Message was sent over {} sender link with delivery tag {} and hash {}", getLinkInstanceType(), new String(deliveryTag), delivery.hashCode());
-            return new AmqpsSendResult(true, deliveryTag);
+            return new AmqpsSendResult(deliveryTag);
         }
         catch (Exception e)
         {
             log.warn("Encountered a problem while sending a message on {} sender link with link correlation id {}", getLinkInstanceType(), this.linkCorrelationId, e);
             this.senderLink.advance();
             delivery.free();
-            return new AmqpsSendResult(false);
+            return new AmqpsSendResult();
         }
     }
 

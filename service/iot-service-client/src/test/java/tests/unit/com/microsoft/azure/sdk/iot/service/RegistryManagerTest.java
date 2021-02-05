@@ -10,7 +10,6 @@ import com.microsoft.azure.sdk.iot.deps.serializer.ConfigurationParser;
 import com.microsoft.azure.sdk.iot.deps.serializer.DeviceParser;
 import com.microsoft.azure.sdk.iot.deps.serializer.StorageAuthenticationType;
 import com.microsoft.azure.sdk.iot.service.*;
-import com.microsoft.azure.sdk.iot.service.Module;
 import com.microsoft.azure.sdk.iot.service.auth.IotHubServiceSasToken;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubExceptionManager;
@@ -676,57 +675,6 @@ public class RegistryManagerTest
         new VerificationsInOrder()
         {
             {
-                device.setForceUpdate(false);
-                mockHttpRequest.setHeaderField("If-Match", "*");
-            }
-        };
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_034: [The function shall throw IllegalArgumentException if the input device is null]
-    // Assert
-    @Test (expected = IllegalArgumentException.class)
-    public void updateDeviceForce_input_null() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-
-        registryManager.updateDevice(null, true);
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_035: [The function shall set forceUpdate on the device]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_036: [The function shall get the URL for the device]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_037: [The function shall create a new SAS token for the device]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_038: [The function shall create a new HttpRequest for updating the device on IotHub]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_039: [The function shall send the created request and get the response]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_040: [The function shall verify the response status and throw proper Exception]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_041: [The function shall create a new Device object from the response and return with it]
-    @Test
-    public void updateDeviceForce_good_case() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        String deviceId = "somedevice";
-
-        new NonStrictExpectations()
-        {
-            {
-                device.getDeviceId();
-                result = deviceId;
-            }
-        };
-
-        Deencapsulation.setField(device, "deviceId", deviceId);
-
-        commonExpectations(connectionString, deviceId);
-
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-        Device returnDevice = registryManager.updateDevice(device, true);
-
-        commonVerifications(HttpMethod.PUT, deviceId, returnDevice);
-
-        new VerificationsInOrder()
-        {
-            {
-                device.setForceUpdate(true);
                 mockHttpRequest.setHeaderField("If-Match", "*");
             }
         };
@@ -769,7 +717,6 @@ public class RegistryManagerTest
         new VerificationsInOrder()
         {
             {
-                device.setForceUpdate(false);
                 mockHttpRequest.setHeaderField("If-Match", "*");
             }
         };
@@ -792,69 +739,6 @@ public class RegistryManagerTest
         RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
 
         CompletableFuture<Device> completableFuture = registryManager.updateDeviceAsync(device);
-        completableFuture.get();
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_044: [The function shall throw IllegalArgumentException if the input device is null]
-    // Assert
-    @Test (expected = IllegalArgumentException.class)
-    public void updateDeviceAsyncForce_input_null() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-
-        registryManager.updateDeviceAsync(null, true);
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_045: [The function shall create an async wrapper around the updateDevice(Device, device, Boolean forceUpdate) function call, handle the return value or delegate exception]
-    @Test
-    public void updateDeviceAsyncForce_future_return_ok() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        String deviceId = "somedevice";
-
-        new NonStrictExpectations()
-        {
-            {
-                device.getDeviceId();
-                result = deviceId;
-            }
-        };
-
-        commonExpectations(connectionString, deviceId);
-
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-        CompletableFuture<Device> completableFuture =  registryManager.updateDeviceAsync(device, true);
-        Device returnDevice = completableFuture.get();
-
-        commonVerifications(HttpMethod.PUT, deviceId, returnDevice);
-
-        new VerificationsInOrder()
-        {
-            {
-                device.setForceUpdate(true);
-                mockHttpRequest.setHeaderField("If-Match", "*");
-            }
-        };
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_12_045: [The function shall create an async wrapper around the updateDevice(Device, device, Boolean forceUpdate) function call, handle the return value or delegate exception]
-    // Assert
-    @Test (expected = Exception.class)
-    public void updateDeviceAsyncForce_future_throw() throws Exception
-    {
-        new MockUp<RegistryManager>()
-        {
-            @Mock
-            public Device updateDevice(Device device, Boolean forceUpdate) throws IOException, IotHubException
-            {
-                throw new IOException();
-            }
-        };
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-
-        CompletableFuture<Device> completableFuture =  registryManager.updateDeviceAsync(device, true);
         completableFuture.get();
     }
 
@@ -1109,7 +993,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
 
@@ -1145,7 +1029,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(statistics);
@@ -1184,7 +1068,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = jobPropertiesJson.getBytes();
             }
@@ -1207,7 +1091,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(jobProperties);
@@ -1277,7 +1161,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = jobPropertiesJson.getBytes();
             }
@@ -1298,7 +1182,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(jobProperties);
@@ -1366,7 +1250,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = jobPropertiesJson.getBytes();
             }
@@ -1387,7 +1271,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(jobProperties);
@@ -1429,7 +1313,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = jobPropertiesJson.getBytes();
             }
@@ -1452,7 +1336,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(importJobProperties);
@@ -1511,7 +1395,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = jobPropertiesJson.getBytes();
             }
@@ -1532,7 +1416,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(jobProperties);
@@ -1778,67 +1662,10 @@ public class RegistryManagerTest
         new VerificationsInOrder()
         {
             {
-                module.setForceUpdate(false);
                 mockHttpRequest.setHeaderField("If-Match", "*");
             }
         };
     }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_026: [The function shall throw IllegalArgumentException if the input module is null]
-    // Assert
-    @Test (expected = IllegalArgumentException.class)
-    public void updateModuleForce_input_null() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-
-        registryManager.updateModule(null, true);
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_027: [The function shall set forceUpdate on the module]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_028: [The function shall get the URL for the module]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_029: [The function shall create a new SAS token for the module]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_030: [The function shall create a new HttpRequest for updating the module on IotHub]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_031: [The function shall send the created request and get the response]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_032: [The function shall verify the response status and throw proper Exception]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_033: [The function shall create a new Module object from the response and return with it]
-    @Test
-    public void updateModuleForce_good_case() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        String moduleId = "somemodule";
-        String deviceId = "somedevice";
-
-        new NonStrictExpectations()
-        {
-            {
-                module.getDeviceId();
-                result = deviceId;
-                module.getId();
-                result = moduleId;
-
-            }
-        };
-
-        Deencapsulation.setField(module, "deviceId", deviceId);
-        Deencapsulation.setField(module, "id", moduleId);
-
-        commonModuleExpectations(connectionString, deviceId, moduleId);
-
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-        Module returnModule = registryManager.updateModule(module, true);
-
-        commonModuleVerifications(HttpMethod.PUT, deviceId, moduleId, returnModule);
-
-        new VerificationsInOrder()
-        {
-            {
-                device.setForceUpdate(true);
-                mockHttpRequest.setHeaderField("If-Match", "*");
-            }
-        };
-    }
-
 
     // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_082: [The function shall throw IllegalArgumentException if the input module is null]
     // Assert
@@ -2169,57 +1996,6 @@ public class RegistryManagerTest
         new VerificationsInOrder()
         {
             {
-                config.setForceUpdate(false);
-                mockHttpRequest.setHeaderField("If-Match", "*");
-            }
-        };
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_065: [The function shall throw IllegalArgumentException if the input configuration is null]
-    // Assert
-    @Test (expected = IllegalArgumentException.class)
-    public void updateConfigurationForce_input_null() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-
-        registryManager.updateConfiguration(null, true);
-    }
-
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_066: [The function shall set forceUpdate on the configuration]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_067: [The function shall get the URL for the configuration]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_068: [The function shall create a new SAS token for the configuration]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_069: [The function shall create a new HttpRequest for updating the configuration on IotHub]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_070: [The function shall send the created request and get the response]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_071: [The function shall verify the response status and throw proper Exception]
-    // Tests_SRS_SERVICE_SDK_JAVA_REGISTRYMANAGER_28_072: [The function shall create a new Configuration object from the response and return with it]
-    @Test
-    public void updateConfigurationForce_good_case() throws Exception
-    {
-        String connectionString = "HostName=aaa.bbb.ccc;SharedAccessKeyName=XXX;SharedAccessKey=YYY";
-        String configId = "someconfiguration";
-
-        new NonStrictExpectations()
-        {
-            {
-                config.getId();
-                result = configId;
-            }
-        };
-
-        Deencapsulation.setField(config, "id", configId);
-
-        commonConfigExpectations(connectionString, configId);
-
-        RegistryManager registryManager = RegistryManager.createFromConnectionString(connectionString);
-        Configuration returnConfig = registryManager.updateConfiguration(config, true);
-
-        commonConfigVerifications(HttpMethod.PUT, configId, returnConfig);
-
-        new VerificationsInOrder()
-        {
-            {
-                config.setForceUpdate(true);
                 mockHttpRequest.setHeaderField("If-Match", "*");
             }
         };
@@ -2436,7 +2212,7 @@ public class RegistryManagerTest
                 mockHttpRequest.send();
                 times = 1;
 
-                mockIotHubExceptionManager.httpResponseVerification(mockHttpResponse);
+                IotHubExceptionManager.httpResponseVerification(mockHttpResponse);
                 times = 1;
 
             }
@@ -2501,7 +2277,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = deviceJson.getBytes();
                 Deencapsulation.invoke(device, "toDeviceParser");
@@ -2524,7 +2300,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(responseDevice);
@@ -2541,7 +2317,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = devicesJson.getBytes();
             }
@@ -2580,7 +2356,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = moduleJson.getBytes();
                 Deencapsulation.invoke(module, "toDeviceParser");
@@ -2603,7 +2379,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(responseModule);
@@ -2620,7 +2396,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = modulesJson.getBytes();
             }
@@ -2659,7 +2435,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = configJson.getBytes();
                 Deencapsulation.invoke(config, "toConfigurationParser");
@@ -2682,7 +2458,7 @@ public class RegistryManagerTest
                 mockHttpRequest.setHeaderField("Content-Type", "application/json");
                 mockHttpRequest.setHeaderField("charset", "utf-8");
                 mockHttpRequest.send();
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
             }
         };
         assertNotNull(responseConfig);
@@ -2699,7 +2475,7 @@ public class RegistryManagerTest
                 result = mockUrl;
                 mockHttpRequest.send();
                 result = mockHttpResponse;
-                mockIotHubExceptionManager.httpResponseVerification((HttpResponse) any);
+                IotHubExceptionManager.httpResponseVerification((HttpResponse) any);
                 mockHttpResponse.getBody();
                 result = configsJson.getBytes();
             }

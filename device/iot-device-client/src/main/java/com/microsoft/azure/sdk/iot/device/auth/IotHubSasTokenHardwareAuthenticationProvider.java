@@ -6,7 +6,6 @@
 package com.microsoft.azure.sdk.iot.device.auth;
 
 import com.microsoft.azure.sdk.iot.deps.auth.IotHubSSLContext;
-import com.microsoft.azure.sdk.iot.deps.util.Base64;
 import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProvider;
 import com.microsoft.azure.sdk.iot.provisioning.security.SecurityProviderTpm;
 import com.microsoft.azure.sdk.iot.provisioning.security.exceptions.SecurityProviderException;
@@ -15,6 +14,8 @@ import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+
+import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 public class IotHubSasTokenHardwareAuthenticationProvider extends IotHubSasTokenAuthenticationProvider
 {
@@ -65,25 +66,14 @@ public class IotHubSasTokenHardwareAuthenticationProvider extends IotHubSasToken
     /**
      * Getter for SasToken. If the saved token has expired, this method shall renew it if possible
      *
-     * @param proactivelyRenew if true, this method will generate a fresh sas token even if the previously saved token
-     *                                 has not expired yet as long as the current token has lived beyond its buffer.
-     *                                 Use this for pre-emptively renewing sas tokens.
-
      * @throws IOException if generating the sas token from the TPM fails
      * @return The value of SasToken
      */
-    public String getRenewedSasToken(boolean proactivelyRenew, boolean forceRenewal) throws IOException
+    public char[] getSasToken() throws IOException
     {
-        if (this.shouldRefreshToken(proactivelyRenew) || forceRenewal)
-        {
-            //Codes_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_035: [If the saved sas token has expired and there is a security provider, the saved sas token shall be refreshed with a new token from the security provider.]
-            //Codes_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_036: [If the saved sas token has not expired and there is a security provider, but the sas token should be proactively renewed, the saved sas token shall be refreshed with a new token from the security provider.]
-            String sasTokenString = this.generateSasTokenSignatureFromSecurityProvider(this.tokenValidSecs);
-            this.sasToken = new IotHubSasToken(this.hostname, this.deviceId, null, sasTokenString, this.moduleId, 0);
-        }
-
-        //Codes_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_005: [This function shall return the saved sas token.]
-        return this.sasToken.toString();
+        String sasTokenString = this.generateSasTokenSignatureFromSecurityProvider(this.tokenValidSecs);
+        this.sasToken = new IotHubSasToken(this.hostname, this.deviceId, null, sasTokenString, this.moduleId, 0);
+        return this.sasToken.toString().toCharArray();
     }
 
     @Override
@@ -131,7 +121,7 @@ public class IotHubSasTokenHardwareAuthenticationProvider extends IotHubSasToken
      * @return always returns false as the hardware authentication mechanism will never need to be updated with a new key or token
      */
     @Override
-    public boolean isRenewalNecessary()
+    public boolean isAuthenticationProviderRenewalNecessary()
     {
         //Hardware will always be able to generate new sas tokens
         //Codes_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_012: [This function shall return false.]
@@ -152,14 +142,14 @@ public class IotHubSasTokenHardwareAuthenticationProvider extends IotHubSasToken
             }
 
             Long expiryTimeUTC = (System.currentTimeMillis() / 1000) + secondsToLive;
-            byte[] token = this.securityProvider.signWithIdentity(encodedTokenScope.concat("\n" + String.valueOf(expiryTimeUTC)).getBytes());
+            byte[] token = this.securityProvider.signWithIdentity(encodedTokenScope.concat("\n" + expiryTimeUTC).getBytes());
             if (token == null || token.length == 0)
             {
                 //Codes_SRS_IOTHUBSASTOKENHARDWAREAUTHENTICATION_34_010: [If the call for the saved security provider to sign with identity returns null or empty bytes, this function shall throw an IOException.]
                 throw new IOException("Security provider could not sign data successfully");
             }
 
-            byte[] base64Signature = Base64.encodeBase64Local(token);
+            byte[] base64Signature = encodeBase64(token);
             String base64UrlEncodedSignature = URLEncoder.encode(new String(base64Signature), ENCODING_FORMAT_NAME);
             return String.format(SASTOKEN_FORMAT, encodedTokenScope, base64UrlEncodedSignature, expiryTimeUTC);
         }
