@@ -2,7 +2,7 @@ name: $(BuildID)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Re
 trigger: none
 pr: none
 schedules:
-  - cron: "30 6 * * *" # every night at 10:30 pm PST (6:30 am UTC)
+  - cron: "30 2 * * 5,6,0" # saturday, sunday, friday night at 6:30 pm PST (6:30 am UTC)
     displayName: Nightly cleanup
     branches:
       include:
