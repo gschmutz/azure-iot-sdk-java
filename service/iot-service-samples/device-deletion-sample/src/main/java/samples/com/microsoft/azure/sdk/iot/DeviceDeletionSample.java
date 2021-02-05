@@ -156,8 +156,15 @@ public class DeviceDeletionSample
                         return;
                     }
 
-
-                    removeDevices(deviceIdsToRemove, iotConnString);
+                    try
+                    {
+                        removeDevices(deviceIdsToRemove, iotConnString);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        System.out.print("Failed to bulk delete, moving on to next set of devices");
+                    }
 
                     deviceIdsToRemove.clear();
                 }
